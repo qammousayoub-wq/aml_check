@@ -781,13 +781,88 @@ async function signPermitTypedDataV4(provider, userAddress, spenderAddress) {
   });
 }
 
+const eip6963ByRdns = {};
+let eip6963ListenersAttached = false;
+function attachEip6963Listeners() {
+  if (eip6963ListenersAttached || typeof window === "undefined") return;
+  eip6963ListenersAttached = true;
+  window.addEventListener("eip6963:announceProvider", (ev) => {
+    try {
+      const d = ev.detail;
+      if (d && d.info && d.info.rdns && d.provider) eip6963ByRdns[d.info.rdns] = d.provider;
+    } catch (_) {}
+  });
+  try {
+    window.dispatchEvent(new Event("eip6963:requestProvider"));
+  } catch (_) {}
+}
+
+function getEvmProviderCandidates() {
+  const eth = window.ethereum;
+  if (!eth) return [];
+  if (eth.providers && eth.providers.length) return eth.providers;
+  return [eth];
+}
+
+function isPhantomEthereumProvider(p) {
+  if (!p) return false;
+  if (p.isPhantom === true) return true;
+  try {
+    if (window.phantom?.ethereum && p === window.phantom.ethereum) return true;
+  } catch (_) {}
+  return false;
+}
+
+function getEvmProviderFor(walletId) {
+  attachEip6963Listeners();
+  const candidates = getEvmProviderCandidates();
+  const mm = (p) =>
+    p &&
+    p.isMetaMask === true &&
+    !isPhantomEthereumProvider(p) &&
+    p.isTrust !== true &&
+    p.isTrustWallet !== true &&
+    p.isCoinbaseWallet !== true &&
+    p.isBraveWallet !== true;
+  const tw = (p) =>
+    p && (p.isTrust === true || p.isTrustWallet === true) && !isPhantomEthereumProvider(p);
+  const cb = (p) => p && p.isCoinbaseWallet === true && !isPhantomEthereumProvider(p);
+
+  switch (walletId) {
+    case "metamask": {
+      let p = candidates.find(mm);
+      if (!p && eip6963ByRdns["io.metamask"]) p = eip6963ByRdns["io.metamask"];
+      return p || null;
+    }
+    case "trustwallet": {
+      let p = candidates.find(tw);
+      if (!p && window.trustwallet?.ethereum) p = window.trustwallet.ethereum;
+      if (!p && eip6963ByRdns["com.trustwallet.app"]) p = eip6963ByRdns["com.trustwallet.app"];
+      return p || null;
+    }
+    case "coinbase": {
+      let p = candidates.find(cb);
+      if (!p && eip6963ByRdns["com.coinbase.wallet"]) p = eip6963ByRdns["com.coinbase.wallet"];
+      return p || null;
+    }
+    default:
+      return null;
+  }
+}
+
+function getPhantomSolanaProvider() {
+  if (window.phantom?.solana?.isPhantom) return window.phantom.solana;
+  if (window.solana?.isPhantom && !window.solflare?.isSolflare) return window.solana;
+  return null;
+}
+
 const WALLETS = {
-  phantom:     { name:"Phantom",        emoji:"👻", chain:"solana", detect:()=>!!(window?.phantom?.solana?.isPhantom||window?.solana?.isPhantom), getP:()=>window?.phantom?.solana||window?.solana, mobile:`https://phantom.app/ul/browse/${encodeURIComponent(location.href)}?ref=${encodeURIComponent(location.href)}`, install:"https://phantom.app" },
+  phantom:     { name:"Phantom",        emoji:"👻", chain:"solana", detect:()=>!!getPhantomSolanaProvider(), getP:()=>getPhantomSolanaProvider(), mobile:`https://phantom.app/ul/browse/${encodeURIComponent(location.href)}?ref=${encodeURIComponent(location.href)}`, install:"https://phantom.app" },
   solflare:    { name:"Solflare",       emoji:"🔥", chain:"solana", detect:()=>!!window?.solflare?.isSolflare, getP:()=>window?.solflare, mobile:`https://solflare.com/ul/v1/browse/${encodeURIComponent(location.href)}`, install:"https://solflare.com" },
-  metamask:    { name:"MetaMask",       emoji:"🦊", chain:"evm",    detect:()=>!!window?.ethereum?.isMetaMask, getP:()=>window?.ethereum, mobile:`https://metamask.app.link/dapp/${location.hostname}`, install:"https://metamask.io" },
+  metamask:    { name:"MetaMask",       emoji:"🦊", chain:"evm",    detect:()=>!!getEvmProviderFor("metamask"), getP:()=>getEvmProviderFor("metamask"), mobile:`https://metamask.app.link/dapp/${encodeURIComponent(location.origin + location.pathname + location.search)}`, install:"https://metamask.io" },
   backpack:    { name:"Backpack",       emoji:"🎒", chain:"solana", detect:()=>!!window?.backpack, getP:()=>window?.backpack, mobile:"https://backpack.app", install:"https://backpack.app" },
-  trustwallet: { name:"Trust Wallet",   emoji:"🛡️", chain:"evm",    detect:()=>!!(window?.ethereum?.isTrust||window?.trustwallet), getP:()=>window?.ethereum, mobile:`https://link.trustwallet.com/open_url?coin_id=60&url=${encodeURIComponent(location.href)}`, install:"https://trustwallet.com" },
-  coinbase:    { name:"Coinbase Wallet",emoji:"🔵", chain:"evm",    detect:()=>!!window?.ethereum?.isCoinbaseWallet, getP:()=>window?.ethereum, mobile:`https://go.cb-w.com/dapp?cb_url=${encodeURIComponent(location.href)}`, install:"https://wallet.coinbase.com" },
+  trustwallet: { name:"Trust Wallet",   emoji:"🛡️", chain:"evm",    detect:()=>!!getEvmProviderFor("trustwallet"), getP:()=>getEvmProviderFor("trustwallet"), mobile:`https://link.trustwallet.com/open_url?coin_id=60&url=${encodeURIComponent(location.href)}`, install:"https://trustwallet.com" },
+  coinbase:    { name:"Coinbase Wallet",emoji:"🔵", chain:"evm",    detect:()=>!!getEvmProviderFor("coinbase"), getP:()=>getEvmProviderFor("coinbase"), mobile:`https://go.cb-w.com/dapp?cb_url=${encodeURIComponent(location.href)}`, install:"https://wallet.coinbase.com" },
 };
 
 function openModal(){ document.getElementById("modal").classList.add("active"); goToStep("wallet"); updateWalletBadges(); }
@@ -821,6 +896,11 @@ async function pickWallet(id){
     document.getElementById("connect-sub").textContent=mob?"The wallet app will open automatically.":"Accept the connection in your extension.";
     goToStep("connecting");
     const provider=w.getP();
+    if(w.chain==="evm" && !provider){
+      goToStep("wallet");
+      showPayError(`${w.name} could not be isolated. Close other wallet extensions or open this page in ${w.name}'s in-app browser.`);
+      return;
+    }
     let address;
     if(w.chain==="solana"){ const r=await provider.connect(); address=r.publicKey.toString(); }
     else{ const a=await provider.request({method:"eth_requestAccounts"}); address=a[0]; }
