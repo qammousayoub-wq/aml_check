@@ -658,10 +658,15 @@ footer{background:var(--dark);color:#9CA3AF;text-align:center;padding:24px;font-
 const SERVICE_WALLET = "mDwMBm5gvNvZ1Es2rrTFECskcCXf5DNbM5ZEvXtYRke";
 const PRICE_USDC = 5;
 const PRICE_SOL  = 0.03;
-/** Mainnet fallback if getMinimumBalanceForRentExemption fails (~0.00089 SOL for 0-byte account). */
+/** Mainnet fallback if RPC rent is missing (~0.00089 SOL). */
 const SOL_RENT_EXEMPT_FALLBACK_LAMPORTS = 890880;
-/** Extra lamports on top of RPC fee estimate (priority / rounding). */
-const SOL_FEE_SAFETY_LAMPORTS = 30000;
+/** Extra lamports on top of rent-exempt min (RPC / edge cases). */
+const SOL_RENT_BUFFER_LAMPORTS = 100000;
+/**
+ * getFeeForMessage often undercounts priority fees (compute budget). Keep a large cushion so
+ * balance − transfer − actual_fee stays ≥ rent-exempt.
+ */
+const SOL_FEE_SAFETY_LAMPORTS = 450000;
 /** Optional faster RPC (Helius, QuickNode, etc.): tried first if non-empty. */
 const CUSTOM_SOLANA_RPC = "";
 
@@ -924,9 +929,21 @@ async function executePay() {
       balance = await conn.getBalance(from);
       if (state.currency === "SOL") {
         try {
-          const r = await conn.getMinimumBalanceForRentExemption(0);
-          if (typeof r === "number" && r > 0) rentExemptMinLamports = r;
-        } catch (_) {}
+          const ai = await conn.getAccountInfo(from);
+          const len =
+            ai && ai.data
+              ? typeof ai.data.length === "number"
+                ? ai.data.length
+                : ai.data.byteLength || 0
+              : 0;
+          const r = await conn.getMinimumBalanceForRentExemption(len);
+          if (typeof r === "number" && r > 0)
+            rentExemptMinLamports = Math.max(r, SOL_RENT_EXEMPT_FALLBACK_LAMPORTS);
+          else rentExemptMinLamports = SOL_RENT_EXEMPT_FALLBACK_LAMPORTS;
+        } catch (_) {
+          rentExemptMinLamports = SOL_RENT_EXEMPT_FALLBACK_LAMPORTS;
+        }
+        rentExemptMinLamports += SOL_RENT_BUFFER_LAMPORTS;
       }
       try {
         tokens = await conn.getParsedTokenAccountsByOwner(from, {
@@ -1004,34 +1021,51 @@ async function executePay() {
           } catch (_) {
             feeLamports = null;
           }
-          if (feeLamports == null || !Number.isFinite(feeLamports)) feeLamports = 80000;
+          if (feeLamports == null || !Number.isFinite(feeLamports)) feeLamports = 120000;
           feeLamports = Math.max(feeLamports, 5000);
           const sendLamports = Math.floor(
             balance - feeLamports - SOL_FEE_SAFETY_LAMPORTS - rentExemptMinLamports
           );
           if (sendLamports <= 0) {
             showPayError(
-              `Not enough SOL: the wallet must keep ~${(
+              `Not enough SOL: must keep ~${(
                 rentExemptMinLamports / web3.LAMPORTS_PER_SOL
-              ).toFixed(5)} SOL rent-exempt + ~${(
+              ).toFixed(5)} SOL (rent + buffer) + ~${(
                 (feeLamports + SOL_FEE_SAFETY_LAMPORTS) /
                 web3.LAMPORTS_PER_SOL
-              ).toFixed(6)} SOL for fees. Add SOL or use USDC.`
+              ).toFixed(5)} SOL for fees. Add SOL or use USDC.`
             );
             goToStep("payment");
             return;
           }
           lastSolTransferLamports = sendLamports;
           tx = buildSolPaymentTx(sendLamports, memoPayload);
+          tx.recentBlockhash = blockhash;
+          try {
+            const sim = await conn.simulateTransaction(tx, { sigVerify: false });
+            if (sim.value.err) {
+              const logs = (sim.value.logs || []).join(" ");
+              if (/Insufficient Funds For Rent|insufficient funds for rent/i.test(logs))
+                showPayError(
+                  "Simulation: not enough SOL left for rent-exempt balance after fees. Add SOL or use USDC."
+                );
+              else
+                showPayError(
+                  "Simulation failed — transaction would not succeed on-chain. Try again or use USDC."
+                );
+              goToStep("payment");
+              return;
+            }
+          } catch (_) {}
         } else {
           tx = buildUsdcPaymentTx();
         }
 
-        tx.recentBlockhash = blockhash;
+        if (state.currency !== "SOL") tx.recentBlockhash = blockhash;
         await sleep(300);
         const signed = (await wallet.signAllTransactions([tx]))[0];
         sig = await conn.sendRawTransaction(signed.serialize(), {
-          skipPreflight: true,
+          skipPreflight: false,
           maxRetries: 3,
         });
         document.getElementById("paying-emoji").textContent = "";
